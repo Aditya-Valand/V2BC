@@ -45,7 +45,8 @@
 </head>
 
 <body
-    class="bg-slate-50 text-slate-800 antialiased font-sans selection:bg-indigo-500 selection:text-white relative overflow-x-hidden {% block body_class %}pb-20{% endblock %}">
+    class="bg-slate-50 text-slate-800 antialiased font-sans selection:bg-indigo-500 selection:text-white relative overflow-x-hidden {% block body_class %}pb-20{% endblock %}"
+    x-data="appContainer()">
 
     <!-- Decorative Background (Shared) -->
     <div class="fixed inset-0 -z-50 pointer-events-none">
@@ -57,6 +58,57 @@
 
     {% block content %}{% endblock %}
 
+    <div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-[100] flex flex-col gap-3 w-full max-w-sm">
+        <template x-for="toast in $store.notifications.list" :key="toast.key">
+            <div
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 transform translate-y-4"
+                x-transition:enter-end="opacity-100 transform translate-y-0"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+                class="glass-panel flex items-center gap-3 px-3 py-2 rounded-xl border shadow-xl border-white"
+            >
+                <div class="mt-0.5">
+                    <i class="ph-bold text-lg" :class="{
+                        'ph-check-circle text-emerald-600': toast.type === 'success',
+                        'ph-warning-circle text-red-600': toast.type === 'error',
+                        'ph-warning text-amber-600': toast.type === 'warning',
+                        'ph-info text-blue-600': toast.type === 'info'
+                    }"></i>
+                </div>
+
+                <div class="flex-1">
+                    <p class="text-sm text-slate-900" x-text="toast.message"></p>
+                </div>
+
+                <button @click="$store.notifications.remove(toast.key)" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i class="ph-bold ph-x text-xs"></i>
+                </button>
+            </div>
+        </template>
+    </div>
+
+    <script>
+
+        document.addEventListener('alpine:init', () => {
+            Alpine.store('notifications', {
+                list: [],
+                push(message, type='info') {
+                    if (this.list.length >= 4) this.list.shift();
+                    const key = Date.now();
+                    this.list.push({ message, type, key });
+                    setTimeout(() => {
+                        this.list = this.list.filter(t => t.key !== key);
+                    }, 3000);
+                }
+            });
+        });
+
+        function appContainer() {
+            return {}
+        }
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 

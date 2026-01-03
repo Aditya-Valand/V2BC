@@ -25,7 +25,7 @@ def dashboard(user):
         return redirect(url_for('auth.login'))
 
     user = dict(raw_user)
-    
+
     conn = get_db_connection()
     tx_rows = conn.execute('SELECT * FROM transactions WHERE user_id = ?', (user['id'],)).fetchall()
     tx_count = len(tx_rows)
@@ -56,7 +56,7 @@ def dashboard(user):
 
     # 2. Tax Logic (Fixed KeyError)
     tax_analysis = BusinessCalculator.calculate_presumptive_tax(turnover)
-    
+
     # Ensure keys exist before modification
     if not tax_analysis or 'estimated_tax' not in tax_analysis:
         tax_analysis = {
@@ -90,9 +90,6 @@ def dashboard(user):
 @token_required
 def profile(user):
 
-    if user['profile'] == 1: # Profile complete
-        return redirect(url_for('dashboard.dashboard'))
-
     if request.method == 'POST':
         # 1. Get the JSON data from Alpine.js
         data = request.get_json()
@@ -106,6 +103,7 @@ def profile(user):
             save_business_profile(user['id'], data)
             user_profile_status_update(user['email'])
 
+
             # 3. Return success and the redirect URL
             return jsonify({
                 "success": True,
@@ -114,12 +112,11 @@ def profile(user):
             }), 200
 
         except Exception as e:
-            print(f"Error saving profile: {e}")
-            return jsonify({"success": False, "message": "Database error"}), 500
+            return jsonify({"success": False, "message": str(e)}), 500
 
     # GET request: Fetch existing data to pre-fill the form (optional)
-    # existing_profile = get_business_profile(user['id'])
-    return render_template('profile.html')
+    existing_profile = get_business_profile(user['id'])
+    return render_template('profile.html', existing_profile=existing_profile)
 
 
 @dashboard_bp.route('/profile-json', methods=['GET'])

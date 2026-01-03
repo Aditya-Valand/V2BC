@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, url_for, make_response, redirect
-from database.user import create_user, verify_user
+from database.user import create_user, verify_user, user_exists
 from services.jwt import create_token
 from middlewares import guest
 
@@ -60,6 +60,9 @@ def signup():
     # 3. Validation
     if not all([name, email, password]):
         return jsonify({"success": False, "message": "All fields are required"}), 400
+
+    if user_exists(email):
+        return jsonify({"success": False, "message": "User already exists"}), 409
 
     try:
         # This calls your function that hashes the PW and saves it

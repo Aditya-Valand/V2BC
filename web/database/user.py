@@ -3,6 +3,15 @@ from database.config import get_db_connection
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
+def user_exists(email):
+    """Checks if a user with the given email already exists."""
+    conn = get_db_connection()
+    user = conn.execute('''
+        SELECT 1 FROM users WHERE email = ?;
+    ''', (email,)).fetchone()
+    conn.close()
+    return user is not None
+
 def create_user(name, email, password):
     """Inserts a new user into the database."""
     conn = get_db_connection()

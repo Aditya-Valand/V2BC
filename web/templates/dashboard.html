@@ -55,7 +55,7 @@
 </a>
             <form action="{{ url_for('transactions.scan_bill') }}" method="POST" enctype="multipart/form-data">
                 <input type="file" name="bill_image" id="bill_upload" class="hidden" onchange="this.form.submit()">
-                <button type="button" onclick="document.getElementById('bill_upload').click()" 
+                <button type="button" onclick="document.getElementById('bill_upload').click()"
                     class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200 hover:-translate-y-0.5 transition-all">
                     <i class="ph-bold ph-plus"></i>
                     Add Record
@@ -78,8 +78,8 @@
                 <svg class="w-48 h-48 transform -rotate-90 relative z-10">
                     <circle cx="96" cy="96" r="88" stroke="#f1f5f9" stroke-width="12" fill="transparent" />
                     <circle cx="96" cy="96" r="88" stroke="currentColor" stroke-width="12" fill="transparent"
-                        stroke-dasharray="552" 
-                        stroke-dashoffset="{{ 552 * (1 - user.compliance.score / 100) }}" 
+                        stroke-dasharray="552"
+                        stroke-dashoffset="{{ 552 * (1 - user.compliance.score / 100) }}"
                         stroke-linecap="round"
                         class="text-indigo-600 transition-all duration-1000 drop-shadow-md" />
                 </svg>
@@ -171,7 +171,7 @@
                 <div class="w-12 h-12 {{ 'bg-rose-50' if loop.first and user.compliance.color == 'red' else 'bg-amber-50' }} rounded-xl flex items-center justify-center border {{ 'border-rose-100' if loop.first and user.compliance.color == 'red' else 'border-amber-100' }} group-hover:scale-110 transition-transform">
                     <i class="ph-bold {{ 'ph-warning text-rose-500' if loop.first and user.compliance.color == 'red' else 'ph-calendar-check text-amber-500' }} text-xl"></i>
                 </div>
-                
+
                 <div>
                     <h4 class="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">
                         {{ action }}
@@ -179,7 +179,7 @@
                     <p class="text-xs text-slate-500 font-medium">Compliance Requirement 2026</p>
                 </div>
             </div>
-            
+
             <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
                 <i class="ph-bold ph-caret-right text-slate-300 group-hover:text-indigo-600"></i>
             </div>
