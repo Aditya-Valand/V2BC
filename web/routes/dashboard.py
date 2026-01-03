@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, request, jsonify
-from database.user import get_user_by_email, save_business_profile, get_business_profile
+from database.user import get_user_by_email, save_business_profile, get_business_profile, user_profile_status_update
 from database.config import get_db_connection # Import your connection helper
 from services.rule_engine import ComplianceEngine
 from services.calculator import BusinessCalculator
@@ -81,6 +81,7 @@ def profile(user):
             # 2. Save/Update the profile in the DB
             # 'user' is the dictionary returned by your token_required decorator
             save_business_profile(user['id'], data)
+            user_profile_status_update(user['email'])
 
             # 3. Return success and the redirect URL
             return jsonify({

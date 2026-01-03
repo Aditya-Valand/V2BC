@@ -14,6 +14,17 @@ def create_user(name, email, password):
     conn.commit()
     conn.close()
 
+
+def user_profile_status_update(email):
+    """Marks the user's profile as complete."""
+    conn = get_db_connection()
+    conn.execute('''
+        UPDATE users SET profile = 1 WHERE email = ?;
+    ''', (email,))
+    conn.commit()
+    conn.close()
+
+
 def verify_user(email, password):
     """Verifies user credentials."""
     conn = get_db_connection()
