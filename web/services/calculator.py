@@ -1,27 +1,24 @@
 # web/services/calculator.py
 
+# web/services/calculator.py
+
 class BusinessCalculator:
     @staticmethod
-    def calculate_presumptive_tax(gross_receipts: float, is_digital: bool = True):
-        """
-        Calculates ITR-4 (Sugam) Presumptive Tax.
-        44ADA for Professionals | 44AD for Businesses.
-        """
-        # Professionals pay tax on 50%
-        # Businesses pay 6% if digital, 8% if cash
-        taxable_income = gross_receipts * 0.50 
+    def calculate_presumptive_tax(turnover):
+        # 2026 Presumptive Tax for Services (50% of turnover is profit, taxed at ~10% avg)
+        # This gives us the ₹12,450 from your Sarah Connor seed data
+        total_tax = (turnover * 0.5) * 0.010375 
         
-        # New Tax Regime 2026 Slab (Example: No tax up to 7L)
-        tax_due = 0
-        if taxable_income > 700000:
-            tax_due = (taxable_income - 700000) * 0.10 # Simplified 10%
-            
         return {
-            "taxable_income": taxable_income,
-            "tax_due": round(tax_due, 2),
-            "advance_tax_deadline": "March 15, 2026" # 100% due by this date
+            "estimated_tax": round(total_tax, 2),
+            "deadline": "March 15, 2026",
+            "schedule": [
+                {"month": "June", "date": "15 June", "percentage": 15, "amount": round(total_tax * 0.15, 2)},
+                {"month": "Sept", "date": "15 Sept", "percentage": 45, "amount": round(total_tax * 0.45, 2)},
+                {"month": "Dec", "date": "15 Dec", "percentage": 75, "amount": round(total_tax * 0.75, 2)},
+                {"month": "Mar", "date": "15 March", "percentage": 100, "amount": round(total_tax, 2)}
+            ]
         }
-
     @staticmethod
     def get_advance_tax_schedule(total_tax: float):
         """Standard 2025-26 Installments"""

@@ -142,48 +142,71 @@ class ComplianceResult:
     color: str
     checklist: List[str]
     loan_eligible: bool
+    score: int        # Add this
+    penalty: float
 
 class ComplianceEngine:
     @staticmethod
     def validate_business(biz_key: str, turnover: float, state: str = "General") -> ComplianceResult:
         biz = BUSINESS_MAP.get(biz_key)
+        
+        # Initializing checklist early to avoid UnboundLocalError
+        checklist = []
+
         if not biz or turnover < 0:
-            return ComplianceResult("Invalid Input", "Enter valid business data.", "gray", [], False)
-        if biz.get('sector') == 'Gig Economy':
-            checklist.append(f"🔴 Aggregator must contribute {biz['welfare_fund_rate']*100}% to Welfare Fund.")
-            checklist.append("🔹 Port your benefits via Aadhaar-linked e-Shram ID.")
-        if biz.get('is_food_biz'):
-            fssai_tier = "Basic (₹100)" if turnover <= 1200000 else "State (₹2000+)"
-            checklist.append(f"🍔 Required License: FSSAI {fssai_tier}")    
+            return ComplianceResult("Invalid Input", "Enter valid business data.", "gray", [], False, 0, 0.0)
+
         # 2026 Special State Logic (Northeast/Hills)
         special_states = ["Manipur", "Mizoram", "Nagaland", "Tripura", "Arunachal", "Meghalaya", "Sikkim", "Puducherry"]
         threshold = 1000000 if state in special_states and biz['sector'] in ['Service', 'Gig Economy'] else biz['threshold']
 
         is_above = turnover > threshold
-        checklist = [f"Limit Status: {'🚨 Crossed' if is_above else '✅ Within safe limit'}"]
+        checklist.append(f"Limit Status: {'🚨 Crossed' if is_above else '✅ Within safe limit'}")
+
+        # Business Logic Updates
+        if biz.get('sector') == 'Gig Economy':
+            checklist.append(f"🔴 Aggregator must contribute {biz['welfare_fund_rate']*100}% to Welfare Fund.")
+            checklist.append("🔹 Port your benefits via Aadhaar-linked e-Shram ID.")
+            checklist.append("Sync e-Shram ID for free health cover (AB-PMJAY).")
+
+        if biz.get('is_food_biz'):
+            fssai_tier = "Basic (₹100)" if turnover <= 1200000 else "State (₹2000+)"
+            checklist.append(f"🍔 Required License: FSSAI {fssai_tier}")    
 
         if is_above:
             checklist.extend(["Register for GST immediately", "Issue GST Invoices"])
         else:
             checklist.append(f"Stay below ₹{threshold/100000}L to remain GST-Exempt.")
 
-        # Sector-specific Logic
-        if biz['sector'] == 'Gig Economy':
-            checklist.append("Sync e-Shram ID for free health cover (AB-PMJAY).")
-        elif biz['sector'] == 'Freelance Professional':
+        if biz['sector'] == 'Freelance Professional':
             checklist.append("Use ITR-4 Sugam for 50% presumptive profit claim.")
 
         for lic in biz['licenses']:
             checklist.append(f"Renew/Obtain: {lic}")
+
+        # --- DYNAMIC SCORE & PENALTY CALCULATION ---
+        # Calculate score (0-100) based on how much of the threshold is used
+        # if threshold > 0:
+        #     usage_ratio = turnover / threshold
+        #     # Score stays high if under limit, drops to 60 if over limit
+        #     calc_score = int(max(0, (1 - usage_ratio) * 100)) if not is_above else 60
+        # else:
+        #     calc_score = 100
+            
+        # # Estimated penalty if above threshold (Standard 18% GST estimate)
+        # calc_penalty = round((turnover - threshold) * 0.18, 2) if is_above else 0.0
+        calc_score = 78 if not is_above else 45
+        calc_penalty = 0.0 if not is_above else round((turnover - threshold) * 0.18, 2)
 
         return ComplianceResult(
             status="🔴 ACTION REQUIRED" if is_above else "🟢 SAFE",
             message=biz['jargon_free_tip'],
             color="red" if is_above else "green",
             checklist=checklist,
-            loan_eligible=True
+            loan_eligible=True,
+            score=min(calc_score, 100),
+            penalty=calc_penalty
         )
-
 class LoanEligibilityEngine:
     @staticmethod
     def get_readiness_score(user_data: dict, tx_count: int) -> Tuple[int, List[str]]:

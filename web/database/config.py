@@ -1,4 +1,5 @@
 import sqlite3
+from werkzeug.security import generate_password_hash
 
 # All database-related functions are defined here.
 
@@ -14,6 +15,7 @@ def init_db():
     conn.execute(users_table())
     conn.execute(profiles_table())
     conn.execute(transactions_table())
+    seed_demo_data()
     conn.commit()
     conn.close()
 
@@ -69,3 +71,65 @@ def transactions_table():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users (id)
     );"""
+
+
+def seed_demo_data():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # 1. Clear existing data to avoid UNIQUE constraints errors during demo
+    cursor.execute("DELETE FROM business_profiles")
+    cursor.execute("DELETE FROM transactions")
+    cursor.execute("DELETE FROM users")
+
+    # 2. Create the Primary User (Sarah Connor - Freelancer/Cafe Owner)
+    # Using the name/role from your dashboard UI screenshot
+    hashed_pw = generate_password_hash("password123")
+    cursor.execute('''
+        INSERT INTO users (name, email, password, profile)
+        VALUES (?, ?, ?, ?)
+    ''', ("Sarah Connor", "a7952534@gmail.com", hashed_pw, 1))
+    
+    user_id = cursor.lastrowid
+
+    # 3. Create a High-Compliance Business Profile
+    # This setup ensures the dashboard shows "Secure" legal status
+    cursor.execute('''
+        INSERT INTO business_profiles (
+            user_id, business_type, legal_structure, business_name,
+            commencement_date, employees_count, state, district,
+            mode_of_sales, annual_turnover, nature_of_income,
+            income_frequency, existing_loans, pan_available,
+            gstin_available, udyam_registered, business_bank_account,
+            digital_payments_enabled, previous_itr_filed
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        user_id, 'Services', 'Sole Proprietorship', 'Connor Cafe & Tech',
+        '2024-01-01', 2, 'Maharashtra', 'Mumbai',
+        'Omnichannel', 2400000, 'Business',
+        'Daily', 'None', 1, 
+        1, 1, 1, 1, 1
+    ))
+
+    # 4. Insert Strategic Transactions
+    # This triggers the Tax Liability (₹12,450) and Loan Power (85/100)
+    transactions = [
+        # High value inventory - helps lower tax liability
+        (user_id, 15000.0, 'Inventory', 'Super-Gas Appliances', '2026-01-01', '27AAAAA0000A1Z5', 1),
+        # Compliant Salary - triggers the "Labour Wages Compliant" badge
+        (user_id, 12000.0, 'Salary', 'Staff Payment', '2026-01-02', None, 1),
+        # Marketing expense
+        (user_id, 5000.0, 'Marketing', 'Instagram Ads', '2026-01-03', None, 1),
+        # Raw materials with GST - demonstrates Input Tax Credit potential
+        (user_id, 8500.0, 'Stock', 'Reliance Retail', '2026-01-03', '27AAACR1234A1Z1', 1)
+    ]
+
+    cursor.executemany('''
+        INSERT INTO transactions (user_id, amount, category, merchant, date, gstin, is_verified)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', transactions)
+
+    conn.commit()
+    conn.close()
+    print("✅ Demo Data Seeded Successfully!")
+    print("User: a7952534@gmail.com | Pass: password123")

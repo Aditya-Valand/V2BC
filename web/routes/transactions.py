@@ -38,18 +38,13 @@ def scan_bill(user):
         return redirect(url_for('dashboard.dashboard'))
 
     # 1. Setup Absolute Path for Saving
-    # Use current_app.root_path to get the absolute path of your 'web' folder
     upload_base = os.path.join(current_app.root_path, 'static', 'uploads')
-    
-    # Ensure the directory exists on the server
     if not os.path.exists(upload_base):
         os.makedirs(upload_base)
 
     # 2. Secure and Save the File
     filename = secure_filename(file.filename)
     unique_filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{filename}"
-    
-    # Absolute path for local OS saving and Gemini reading
     absolute_filepath = os.path.join(upload_base, unique_filename)
     file.save(absolute_filepath)
 
@@ -57,8 +52,7 @@ def scan_bill(user):
         # 3. Trigger Gemini pipeline with the ABSOLUTE path
         extracted_data = ocr_tool.extract_data(absolute_filepath)
 
-        # 4. Map data for the Review Form
-        # Note: 'file_url' is relative to /static/ for the browser
+        # 4. Map data for the Review Form (add_transaction.html)
         formatted_data = {
             "merchant": extracted_data.get('vendor_name'),
             "amount": extracted_data.get('total_amount'),
@@ -68,14 +62,16 @@ def scan_bill(user):
             "file_url": f"uploads/{unique_filename}" 
         }
 
-        # Fallback date
+        # Fallback date if AI fails to find one
         if not formatted_data['date']:
             formatted_data['date'] = datetime.now().strftime('%Y-%m-%d')
 
+        # 5. RENDER REVIEW FORM - Do not redirect yet!
+        # This allows the user to click "Save" which triggers transactions.save_transaction
         return render_template('add_transaction.html', data=formatted_data)
 
     except Exception as e:
-        # If AI fails, we still have the file saved, but we notify the user
+        # If AI fails, we still have the file saved, but we return to dashboard
         flash(f"AI Extraction failed: {str(e)}", "danger")
         return redirect(url_for('dashboard.dashboard'))
 
@@ -98,3 +94,25 @@ def save_transaction(user):
         flash(f"Database Error: {str(e)}", "danger")
     
     return redirect(url_for('dashboard.dashboard'))
+
+@transactions_bp.route('/debug-last-scan/<filename>')
+@token_required
+def debug_last_scan(user, filename):
+    """Temporary route to see raw AI output for a specific file."""
+    import os
+    from flask import jsonify, current_app
+    
+    filepath = os.path.join(current_app.root_path, 'static', 'uploads', filename)
+    
+    try:
+        # Run the extraction
+        raw_data = ocr_tool.extract_data(filepath)
+        
+        # Return raw JSON to the browser
+        return jsonify({
+            "status": "success",
+            "filename": filename,
+            "extracted_data": raw_data
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500

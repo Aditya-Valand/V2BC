@@ -3,32 +3,25 @@
 {% block title %}Dashboard - BharatCompliance{% endblock %}
 
 {% block content %}
-<!-- Navigation -->
-<nav
-    class="sticky top-4 z-50 w-[95%] max-w-7xl mx-auto rounded-2xl glass-panel shadow-lg shadow-indigo-100/20 border border-white/50 mb-8 fade-in-up">
+<nav class="sticky top-4 z-50 w-[95%] max-w-7xl mx-auto rounded-2xl glass-panel shadow-lg shadow-indigo-100/20 border border-white/50 mb-8 fade-in-up">
     <div class="px-6 h-16 flex justify-between items-center">
         <div class="flex items-center gap-8">
             <div class="flex items-center gap-2">
-                <div
-                    class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-200">
                     <i class="ph-bold ph-shield-check text-lg"></i>
                 </div>
                 <span class="text-lg font-bold text-slate-900 tracking-tight">BharatCompliance</span>
             </div>
 
             <div class="hidden md:flex items-center gap-1">
-                <a href="#"
-                    class="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-sm font-bold border border-indigo-100">Dashboard</a>
-                <a href="#"
-                    class="px-4 py-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-50 rounded-xl text-sm font-medium transition-all">Records</a>
-                <a href="#"
-                    class="px-4 py-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-50 rounded-xl text-sm font-medium transition-all">Loans</a>
+                <a href="{{ url_for('dashboard.dashboard') }}" class="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-sm font-bold border border-indigo-100">Dashboard</a>
+                <a href="{{ url_for('transactions.list_transactions') }}" class="px-4 py-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-50 rounded-xl text-sm font-medium transition-all">Records</a>
+                <a href="#" class="px-4 py-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-50 rounded-xl text-sm font-medium transition-all">Loans</a>
             </div>
         </div>
 
         <div class="flex items-center gap-4">
-            <button
-                class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all relative">
+            <button class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all relative">
                 <i class="ph-bold ph-bell text-xl"></i>
                 <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
             </button>
@@ -36,12 +29,12 @@
             <div class="flex items-center gap-3 pl-1 cursor-pointer group">
                 <div class="text-right hidden sm:block">
                     <p class="text-sm font-bold text-slate-900 leading-none group-hover:text-indigo-600 transition">
-                        {{ user_name if user_name else 'Guest User' }}</p>
-                    <p class="text-xs text-slate-400 mt-1">Freelancer</p>
+                        {{ user.profile.name }}
+                    </p>
+                    <p class="text-xs text-slate-400 mt-1">{{ user.profile.business_type or 'General' }}</p>
                 </div>
-                <div
-                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white font-bold shadow-md shadow-indigo-200 group-hover:shadow-lg group-hover:scale-105 transition-all">
-                    {{ user_name[0] if user_name else 'G' }}
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white font-bold shadow-md shadow-indigo-200 group-hover:shadow-lg group-hover:scale-105 transition-all uppercase">
+                    {{ user.profile.name[0] }}
                 </div>
             </div>
         </div>
@@ -49,235 +42,195 @@
 </nav>
 
 <main class="container mx-auto px-4 max-w-7xl">
-
-    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 fade-in-up"
-        style="animation-delay: 0.1s;">
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 fade-in-up" style="animation-delay: 0.1s;">
         <div>
             <h2 class="text-3xl font-bold text-slate-900 mb-1">Financial Overview</h2>
-            <p class="text-slate-500">Monitoring compliance health for <span
-                    class="font-bold text-slate-900 bg-indigo-50 px-2 py-0.5 rounded text-indigo-700">Jan
-                    2026</span></p>
+            <p class="text-slate-500">Monitoring compliance health for <span class="font-bold text-slate-900 bg-indigo-50 px-2 py-0.5 rounded text-indigo-700">Jan 2026</span></p>
         </div>
         <div class="flex gap-3">
-            <button
-                class="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-50 hover:text-indigo-600 border border-slate-200 shadow-sm transition-all group">
-                <i class="ph-bold ph-calendar-check text-slate-400 group-hover:text-indigo-600 transition-colors"></i>
-                Tax Calendar
-            </button>
-            <button
-                class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200 hover:-translate-y-0.5 transition-all">
-                <i class="ph-bold ph-plus"></i>
-                Add Record
-            </button>
+            <a href="{{ url_for('compliance.tax_calendar') }}"
+   class="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-50 hover:text-indigo-600 border border-slate-200 shadow-sm transition-all group">
+    <i class="ph-bold ph-calendar-check text-slate-400 group-hover:text-indigo-600 transition-colors"></i>
+    Tax Calendar
+</a>
+            <form action="{{ url_for('transactions.scan_bill') }}" method="POST" enctype="multipart/form-data">
+                <input type="file" name="bill_image" id="bill_upload" class="hidden" onchange="this.form.submit()">
+                <button type="button" onclick="document.getElementById('bill_upload').click()" 
+                    class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200 hover:-translate-y-0.5 transition-all">
+                    <i class="ph-bold ph-plus"></i>
+                    Add Record
+                </button>
+            </form>
         </div>
     </header>
 
     <div class="grid grid-cols-12 gap-6 mb-8 fade-in-up" style="animation-delay: 0.2s;">
-
-        <div
-            class="col-span-12 lg:col-span-4 glass-panel p-8 rounded-[2rem] shadow-xl shadow-indigo-100/50 border border-white flex flex-col items-center hover:shadow-2xl hover:shadow-indigo-200/50 transition-all duration-300">
+        <div class="col-span-12 lg:col-span-4 glass-panel p-8 rounded-[2rem] shadow-xl shadow-indigo-100/50 border border-white flex flex-col items-center hover:shadow-2xl hover:shadow-indigo-200/50 transition-all duration-300">
             <div class="w-full flex justify-between items-center mb-8">
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Compliance Health</h3>
-                <div
-                    class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-indigo-50 hover:text-indigo-600 transition-colors cursor-help">
+                <div class="w-8 h-8 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-indigo-50 hover:text-indigo-600 transition-colors cursor-help">
                     <i class="ph-bold ph-info"></i>
                 </div>
             </div>
 
             <div class="relative flex justify-center items-center mb-8 group">
-                <div
-                    class="absolute inset-0 bg-indigo-500/5 blur-2xl rounded-full scale-110 group-hover:scale-125 transition-transform duration-500">
-                </div>
+                <div class="absolute inset-0 bg-indigo-500/5 blur-2xl rounded-full scale-110 group-hover:scale-125 transition-transform duration-500"></div>
                 <svg class="w-48 h-48 transform -rotate-90 relative z-10">
                     <circle cx="96" cy="96" r="88" stroke="#f1f5f9" stroke-width="12" fill="transparent" />
                     <circle cx="96" cy="96" r="88" stroke="currentColor" stroke-width="12" fill="transparent"
-                        stroke-dasharray="552" stroke-dashoffset="120" stroke-linecap="round"
+                        stroke-dasharray="552" 
+                        stroke-dashoffset="{{ 552 * (1 - user.compliance.score / 100) }}" 
+                        stroke-linecap="round"
                         class="text-indigo-600 transition-all duration-1000 drop-shadow-md" />
                 </svg>
                 <div class="absolute inset-0 flex flex-col justify-center items-center z-20">
-                    <span
-                        class="text-5xl font-bold text-slate-900 group-hover:scale-110 transition-transform">78%</span>
-                    <div
-                        class="flex items-center gap-1 text-emerald-600 mt-2 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">
+                    <span class="text-5xl font-bold text-slate-900 group-hover:scale-110 transition-transform">{{ user.compliance.score }}%</span>
+                    <div class="flex items-center gap-1 text-emerald-600 mt-2 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">
                         <i class="ph-bold ph-trend-up text-xs"></i>
-                        <span class="text-xs font-bold uppercase">Stable</span>
+                        <span class="text-xs font-bold uppercase">{{ user.compliance.status }}</span>
                     </div>
                 </div>
             </div>
 
             <div class="w-full pt-6 border-t border-slate-100 text-center">
-                <p class="text-sm text-slate-500 font-medium">"You are performing better than <span
-                        class="text-indigo-600 font-bold">82%</span> of peers."</p>
+                <p class="text-sm text-slate-500 font-medium">"{{ user.compliance.message }}"</p>
             </div>
         </div>
 
         <div class="col-span-12 lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div
-                class="glass-panel p-8 rounded-[2rem] shadow-xl shadow-indigo-100/50 border border-white flex flex-col justify-between hover:shadow-2xl hover:shadow-indigo-200/50 transition-all duration-300 relative overflow-hidden group">
+            <div class="glass-panel p-8 rounded-[2rem] shadow-xl shadow-indigo-100/50 border border-white flex flex-col justify-between hover:shadow-2xl hover:shadow-indigo-200/50 transition-all duration-300 relative overflow-hidden group">
                 <div class="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
                     <i class="ph-bold ph-receipt text-9xl text-rose-900"></i>
                 </div>
 
                 <div class="relative z-10">
                     <div class="flex justify-between items-start mb-6">
-                        <div
-                            class="w-12 h-12 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center border border-rose-100">
+                        <div class="w-12 h-12 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center border border-rose-100">
                             <i class="ph-bold ph-receipt text-2xl"></i>
                         </div>
-                        <span
-                            class="px-3 py-1 bg-rose-50 text-rose-600 text-xs font-bold rounded-lg border border-rose-100 animate-pulse">Pay
-                            Soon</span>
+                        <span class="px-3 py-1 bg-rose-50 text-rose-600 text-xs font-bold rounded-lg border border-rose-100">Tax View</span>
                     </div>
                     <div class="mt-2">
-                        <p class="text-sm font-semibold text-slate-400 mb-1 uppercase tracking-wide">Estimated
-                            Liability</p>
-                        <p
-                            class="text-4xl font-bold text-slate-900 tracking-tight group-hover:translate-x-1 transition-transform">
-                            ₹12,450</p>
+                        <p class="text-sm font-semibold text-slate-400 mb-1 uppercase tracking-wide">Estimated Liability</p>
+                        <p class="text-4xl font-bold text-slate-900 tracking-tight group-hover:translate-x-1 transition-transform">
+                           ₹{{ "{:,.2f}".format(user.tax.estimated_tax | default(0)) }}
+                        </p>
                     </div>
                 </div>
 
                 <div class="mt-8 pt-4 border-t border-slate-100 relative z-10">
                     <p class="text-sm text-slate-500 flex items-center gap-2 font-medium">
-                        <i class="ph-bold ph-clock text-rose-400"></i> Next Payment: March 15
+                        <i class="ph-bold ph-clock text-rose-400"></i> Next Deadline: {{ user.tax.deadline }}
                     </p>
                 </div>
             </div>
 
-            <div
-                class="bg-slate-900 p-8 rounded-[2rem] shadow-xl shadow-slate-900/20 text-white flex flex-col justify-between relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
+            <div class="bg-slate-900 p-8 rounded-[2rem] shadow-xl shadow-slate-900/20 text-white flex flex-col justify-between relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
                 <div class="relative z-10">
                     <div class="flex justify-between items-center mb-8">
                         <p class="text-xs font-bold text-indigo-400 uppercase tracking-widest">Loan Power</p>
-                        <div
-                            class="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center border border-slate-700">
+                        <div class="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center border border-slate-700">
                             <i class="ph-bold ph-chart-line-up text-emerald-400 text-xl"></i>
                         </div>
                     </div>
                     <div class="flex items-baseline gap-2 mb-4">
-                        <span class="text-5xl font-bold tracking-tight">85</span>
+                        <span class="text-5xl font-bold tracking-tight">{{ user.credit.score }}</span>
                         <span class="text-lg text-slate-500 font-medium">/100</span>
                     </div>
-                    <div
-                        class="w-full bg-slate-800/50 h-2 rounded-full mb-8 backdrop-blur-sm border border-slate-700/50">
+                    <div class="w-full bg-slate-800/50 h-2 rounded-full mb-8 backdrop-blur-sm border border-slate-700/50">
                         <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)] relative overflow-hidden"
-                            style="width: 85%">
+                            style="width: {{ user.credit.score }}%">
                             <div class="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
                         </div>
                     </div>
-                    <button
-                        class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg shadow-indigo-900/50 border border-indigo-500/50">
+                    <button class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg shadow-indigo-900/50 border border-indigo-500/50">
                         Improve Eligibility
                     </button>
                 </div>
-
-                <!-- Decorative background elements for dark card -->
-                <div
-                    class="absolute -top-24 -right-24 w-64 h-64 bg-indigo-600/20 rounded-full blur-[60px] group-hover:bg-indigo-600/30 transition-colors">
-                </div>
-                <div
-                    class="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-600/20 rounded-full blur-[60px] group-hover:bg-purple-600/30 transition-colors">
-                </div>
+                <div class="absolute -top-24 -right-24 w-64 h-64 bg-indigo-600/20 rounded-full blur-[60px] group-hover:bg-indigo-600/30 transition-colors"></div>
+                <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-600/20 rounded-full blur-[60px] group-hover:bg-purple-600/30 transition-colors"></div>
             </div>
         </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 fade-in-up" style="animation-delay: 0.3s;">
-
         <section class="glass-panel p-8 rounded-[2rem] shadow-xl shadow-indigo-100/50 border border-white">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                    <i class="ph-bold ph-list-checks text-indigo-600 text-lg"></i> Action Plan
-                </h3>
-                <span
-                    class="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-lg border border-slate-200">3
-                    Active</span>
-            </div>
+    <div class="flex justify-between items-center mb-6">
+        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+            <i class="ph-bold ph-list-checks text-indigo-600 text-lg"></i> Action Plan
+        </h3>
+        <span class="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-lg border border-slate-200">
+            {{ user.compliance.checklist|length }} Active
+        </span>
+    </div>
 
-            <div class="space-y-4">
-                <div
-                    class="group flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-md hover:shadow-indigo-100/50 transition-all cursor-pointer">
-                    <div class="flex items-center gap-4">
-                        <div
-                            class="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center border border-rose-100 group-hover:scale-110 transition-transform">
-                            <i class="ph-bold ph-warning text-rose-500 text-xl"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">
-                                GST Registration</h4>
-                            <p class="text-xs text-slate-500 font-medium">Threshold reached (₹20L+)</p>
-                        </div>
-                    </div>
-                    <div
-                        class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
-                        <i class="ph-bold ph-caret-right text-slate-300 group-hover:text-indigo-600"></i>
-                    </div>
+    <div class="space-y-4">
+        {% for action in user.compliance.checklist %}
+        <div class="group flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-md hover:shadow-indigo-100/50 transition-all cursor-pointer">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 {{ 'bg-rose-50' if loop.first and user.compliance.color == 'red' else 'bg-amber-50' }} rounded-xl flex items-center justify-center border {{ 'border-rose-100' if loop.first and user.compliance.color == 'red' else 'border-amber-100' }} group-hover:scale-110 transition-transform">
+                    <i class="ph-bold {{ 'ph-warning text-rose-500' if loop.first and user.compliance.color == 'red' else 'ph-calendar-check text-amber-500' }} text-xl"></i>
                 </div>
-
-                <div
-                    class="group flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 hover:border-indigo-200 hover:shadow-md hover:shadow-indigo-100/50 transition-all cursor-pointer">
-                    <div class="flex items-center gap-4">
-                        <div
-                            class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center border border-amber-100 group-hover:scale-110 transition-transform">
-                            <i class="ph-bold ph-calendar-check text-amber-500 text-xl"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">
-                                Quarterly Advance Tax</h4>
-                            <p class="text-xs text-slate-500 font-medium">Due in 14 days</p>
-                        </div>
-                    </div>
-                    <div
-                        class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
-                        <i class="ph-bold ph-caret-right text-slate-300 group-hover:text-indigo-600"></i>
-                    </div>
+                
+                <div>
+                    <h4 class="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">
+                        {{ action }}
+                    </h4>
+                    <p class="text-xs text-slate-500 font-medium">Compliance Requirement 2026</p>
                 </div>
             </div>
-        </section>
+            
+            <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                <i class="ph-bold ph-caret-right text-slate-300 group-hover:text-indigo-600"></i>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
 
         <section class="glass-panel p-8 rounded-[2rem] shadow-xl shadow-indigo-100/50 border border-white">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                     <i class="ph-bold ph-shield-check text-indigo-600 text-lg"></i> Risk Guard
                 </h3>
-                <span
-                    class="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">
+                <span class="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">
                     <i class="ph-bold ph-check-circle"></i> Verified 2026
                 </span>
             </div>
 
-            <div
-                class="p-5 bg-gradient-to-br from-emerald-50 to-teal-50 text-emerald-800 rounded-2xl border border-emerald-100 mb-6 relative overflow-hidden">
+            <div class="p-5 {{ 'bg-gradient-to-br from-emerald-50 to-teal-50 text-emerald-800 border-emerald-100' if user.labour.is_compliant else 'bg-rose-50 text-rose-800 border-rose-100' }} rounded-2xl border mb-6 relative overflow-hidden">
                 <div class="relative z-10 flex gap-4">
-                    <div
-                        class="w-10 h-10 bg-white/60 rounded-full flex items-center justify-center text-emerald-600 shadow-sm backdrop-blur-sm">
-                        <i class="ph-bold ph-check text-xl"></i>
+                    <div class="w-10 h-10 bg-white/60 rounded-full flex items-center justify-center {{ 'text-emerald-600' if user.labour.is_compliant else 'text-rose-600' }} shadow-sm backdrop-blur-sm">
+                        <i class="ph-bold {{ 'ph-check' if user.labour.is_compliant else 'ph-warning' }} text-xl"></i>
                     </div>
                     <div>
-                        <p class="text-sm font-bold text-emerald-900">Labour Wages Compliant</p>
-                        <p class="text-xs text-emerald-700 mt-1 font-medium">Following National Floor Wage
-                            (₹190/day)</p>
+                        <p class="text-sm font-bold {{ 'text-emerald-900' if user.labour.is_compliant else 'text-rose-900' }}">
+                            {{ 'Labour Wages Compliant' if user.labour.is_compliant else 'Wage Compliance Alert' }}
+                        </p>
+                        <p class="text-xs {{ 'text-emerald-700' if user.labour.is_compliant else 'text-rose-700' }} mt-1 font-medium">
+                            {% if user.labour.is_compliant %}
+                                Following National Floor Wage (₹190/day)
+                            {% else %}
+                                Below Floor Wage. Gap: ₹{{ user.labour.gap }}/day
+                            {% endif %}
+                        </p>
                     </div>
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
-                <div
-                    class="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-center hover:bg-white hover:border-slate-200 hover:shadow-sm transition-all group">
-                    <p class="text-xs font-bold text-slate-400 uppercase mb-2 tracking-wide group-hover:text-slate-500">
-                        Penalty Risk</p>
-                    <p class="text-xl font-bold text-slate-900 group-hover:scale-110 transition-transform">₹0.00</p>
+                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-center hover:bg-white hover:border-slate-200 hover:shadow-sm transition-all group">
+                    <p class="text-xs font-bold text-slate-400 uppercase mb-2 tracking-wide group-hover:text-slate-500">Penalty Risk</p>
+                    <p class="text-xl font-bold text-slate-900 group-hover:scale-110 transition-transform">₹{{ user.compliance.penalty }}</p>
                 </div>
-                <div
-                    class="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-center hover:bg-white hover:border-slate-200 hover:shadow-sm transition-all group">
-                    <p class="text-xs font-bold text-slate-400 uppercase mb-2 tracking-wide group-hover:text-slate-500">
-                        Legal Status</p>
-                    <p class="text-xl font-bold text-emerald-600 group-hover:scale-110 transition-transform">Secure
+                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-center hover:bg-white hover:border-slate-200 hover:shadow-sm transition-all group">
+                    <p class="text-xs font-bold text-slate-400 uppercase mb-2 tracking-wide group-hover:text-slate-500">Legal Status</p>
+                    <p class="text-xl font-bold {{ 'text-emerald-600' if user.compliance.score > 70 else 'text-rose-600' }} group-hover:scale-110 transition-transform uppercase">
+                        {{ 'Secure' if user.compliance.score > 70 else 'Alert' }}
                     </p>
                 </div>
             </div>
         </section>
     </div>
-
 </main>
 {% endblock %}

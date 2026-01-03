@@ -8,14 +8,14 @@
     <div class="flex items-center justify-between mb-10">
         <div>
             <nav class="flex mb-2 text-sm text-slate-400 font-medium">
-                <a href="{{ url_for('dashboard') }}" class="hover:text-indigo-600 transition">Dashboard</a>
+                <a href="{{ url_for('dashboard.dashboard') }}" class="hover:text-indigo-600 transition">Dashboard</a>
                 <span class="mx-2">/</span>
                 <span class="text-slate-800">Verify Bill</span>
             </nav>
             <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Review Extraction</h1>
         </div>
         <div class="flex gap-3">
-            <a href="{{ url_for('dashboard') }}"
+            <a href="{{ url_for('dashboard.dashboard') }}"
                 class="px-6 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-colors">Discard</a>
         </div>
     </div>
@@ -23,136 +23,116 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
         <div class="lg:col-span-5 space-y-6 fade-in-up" style="animation-delay: 0.1s;">
-            <div
-                class="glass-panel p-4 rounded-[2.5rem] shadow-xl shadow-indigo-100/50 border border-white sticky top-28">
-                <div
-                    class="relative group overflow-hidden rounded-[2rem] bg-indigo-50/50 aspect-[3/4] flex items-center justify-center border-2 border-dashed border-indigo-200 hover:border-indigo-400 transition-colors">
-                    <div class="text-center p-8">
-                        <div
-                            class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-md mx-auto mb-4 group-hover:scale-110 transition-transform">
-                            <i class="ph-bold ph-file-search text-4xl text-indigo-500"></i>
+            <div class="glass-panel p-4 rounded-[2.5rem] shadow-xl shadow-indigo-100/50 border border-white sticky top-28">
+                <div class="relative group overflow-hidden rounded-[2rem] bg-indigo-50/50 aspect-[3/4] flex items-center justify-center border-2 border-dashed border-indigo-200 hover:border-indigo-400 transition-colors">
+                    {% if data.file_url %}
+                        <img src="{{ url_for('static', filename=data.file_url) }}" 
+                             alt="Scanned Bill" 
+                             class="w-full h-full object-contain rounded-[1.8rem] shadow-sm">
+                    {% else %}
+                        <div class="text-center p-8">
+                            <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-md mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                <i class="ph-bold ph-file-search text-4xl text-indigo-500"></i>
+                            </div>
+                            <p class="text-slate-500 font-bold text-sm">AI Analysis Active</p>
                         </div>
-                        <p class="text-slate-500 font-bold text-sm">AI Document Analysis</p>
-                        <p class="text-xs text-slate-400 mt-1">Previewing extracted data</p>
-                    </div>
+                    {% endif %}
 
-                    <div
-                        class="absolute top-6 left-6 bg-indigo-600/90 backdrop-blur-md text-white text-[10px] px-3 py-1.5 rounded-full font-bold uppercase tracking-wide animate-pulse shadow-lg shadow-indigo-500/20">
-                        Scanning...
+                    <div class="absolute top-6 left-6 bg-indigo-600/90 backdrop-blur-md text-white text-[10px] px-3 py-1.5 rounded-full font-bold uppercase tracking-wide shadow-lg shadow-indigo-500/20">
+                        Verified Scan
                     </div>
                 </div>
 
-                <div
-                    class="mt-6 p-5 bg-gradient-to-br from-indigo-50 to-white rounded-2xl flex items-center gap-4 border border-indigo-100 shadow-sm">
-                    <div
-                        class="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200 text-white">
+                <div class="mt-6 p-5 bg-gradient-to-br from-indigo-50 to-white rounded-2xl flex items-center gap-4 border border-indigo-100 shadow-sm">
+                    <div class="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200 text-white">
                         <i class="ph-bold ph-magic-wand text-xl"></i>
                     </div>
                     <div>
-                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">AI Confidence</p>
-                        <p class="text-sm font-bold text-slate-700">Document parsed with 98% accuracy</p>
+                        <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Gemini 2.0 Flash</p>
+                        <p class="text-sm font-bold text-slate-700">Audit-ready data extracted</p>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="lg:col-span-7 fade-in-up" style="animation-delay: 0.2s;">
-            <form action="#" method="POST" class="space-y-6">
-                <!-- Note: Action updated to '#' for simpler demo unless user provided a specific endpoint that works -->
-                <div
-                    class="glass-panel p-10 rounded-[2.5rem] shadow-2xl shadow-indigo-100/50 border border-white relative overflow-hidden">
-
+            <form action="{{ url_for('transactions.save_transaction') }}" method="POST" class="space-y-6">
+                <div class="glass-panel p-10 rounded-[2.5rem] shadow-2xl shadow-indigo-100/50 border border-white relative overflow-hidden">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
 
                         <div class="md:col-span-2 space-y-2">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Vendor /
-                                Merchant</label>
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Vendor / Merchant</label>
                             <div class="relative group">
-                                <i
-                                    class="ph-bold ph-storefront absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors text-xl"></i>
+                                <i class="ph-bold ph-storefront absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors text-xl"></i>
                                 <input type="text" name="merchant"
-                                    value="{{ data.vendor_name if data else 'Reliance Retail' }}"
-                                    class="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100 font-bold text-slate-800 transition-all placeholder:text-slate-300">
+                                    value="{{ data.merchant | default('Unknown Vendor') }}" required
+                                    class="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100 font-bold text-slate-800 transition-all">
                             </div>
                         </div>
 
                         <div class="space-y-2">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Transaction
-                                Amount</label>
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Transaction Amount</label>
                             <div class="relative group">
-                                <i
-                                    class="ph-bold ph-currency-inr absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors text-xl"></i>
+                                <i class="ph-bold ph-currency-inr absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors text-xl"></i>
                                 <input type="number" step="0.01" name="amount"
-                                    value="{{ data.total_amount if data else '1250.00' }}"
-                                    class="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100 font-bold text-xl text-slate-800 transition-all placeholder:text-slate-300">
+                                    value="{{ data.amount | default(0) }}" required
+                                    class="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100 font-bold text-xl text-slate-800 transition-all">
                             </div>
                         </div>
 
                         <div class="space-y-2">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Billing
-                                Date</label>
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Billing Date</label>
                             <div class="relative group">
-                                <i
-                                    class="ph-bold ph-calendar-blank absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors text-xl"></i>
-                                <input type="text" name="date" value="{{ data.date if data else '2025-10-26' }}"
-                                    class="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100 font-bold text-slate-800 transition-all placeholder:text-slate-300">
+                                <i class="ph-bold ph-calendar-blank absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors text-xl"></i>
+                                <input type="date" name="date" value="{{ data.date }}" required
+                                    class="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100 font-bold text-slate-800 transition-all">
                             </div>
                         </div>
 
                         <div class="space-y-2">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Vendor
-                                GSTIN</label>
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Vendor GSTIN</label>
                             <div class="relative group">
-                                <i
-                                    class="ph-bold ph-fingerprint absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors text-xl"></i>
-                                <input type="text" name="gstin" value="{{ data.gstin if data else '' }}"
-                                    class="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100 font-bold text-slate-800 tracking-widest transition-all placeholder:text-slate-300"
-                                    placeholder="Optional">
+                                <i class="ph-bold ph-fingerprint absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors text-xl"></i>
+                                <input type="text" name="gstin" value="{{ data.gstin | default('') }}"
+                                    class="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100 font-bold text-slate-800 tracking-widest transition-all"
+                                    placeholder="Optional (15 Digits)">
                             </div>
                         </div>
 
-                        <div class="space-y-2" x-data="{ selected: 'Inventory' }">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Expense
-                                Category</label>
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Expense Category</label>
                             <div class="relative group">
-                                <i
-                                    class="ph-bold ph-tag absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors text-xl"></i>
-                                <select name="category"
+                                <i class="ph-bold ph-tag absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors text-xl"></i>
+                                <select name="category" required
                                     class="w-full pl-14 pr-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-100 font-bold text-slate-800 appearance-none transition-all cursor-pointer">
-                                    <option value="Inventory">Inventory / Stock</option>
-                                    <option value="Salary">Salary / Wages</option>
-                                    <option value="Rent">Rent / Office</option>
-                                    <option value="Marketing">Marketing</option>
-                                    <option value="Utility">Utilities (Electricity/Water)</option>
+                                    <option value="Inventory" {{ 'selected' if data.category == 'Inventory' }}>Inventory / Stock</option>
+                                    <option value="Salary" {{ 'selected' if data.category == 'Salary' }}>Salary / Wages</option>
+                                    <option value="Rent" {{ 'selected' if data.category == 'Rent' }}>Rent / Office</option>
+                                    <option value="Marketing" {{ 'selected' if data.category == 'Marketing' }}>Marketing</option>
+                                    <option value="Utility" {{ 'selected' if data.category == 'Utility' }}>Utilities</option>
                                 </select>
-                                <i
-                                    class="ph-bold ph-caret-down absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                                <i class="ph-bold ph-caret-down absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
                             </div>
                         </div>
 
                     </div>
 
-                    <div
-                        class="mt-10 p-6 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-5 relative z-10 group hover:bg-emerald-100/50 transition-colors">
-                        <div
-                            class="w-14 h-14 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200 group-hover:scale-110 transition-transform">
+                    <div class="mt-10 p-6 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-5 relative z-10 group hover:bg-emerald-100/50 transition-colors">
+                        <div class="w-14 h-14 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200 group-hover:scale-110 transition-transform">
                             <i class="ph-bold ph-shield-check text-2xl"></i>
                         </div>
                         <div>
-                            <h4 class="font-bold text-emerald-900">Tax Savings Detected</h4>
-                            <p class="text-sm text-emerald-700 font-medium mt-0.5">This business expense can be used to
-                                reduce your taxable profit.</p>
+                            <h4 class="font-bold text-emerald-900">Digital Audit Trail</h4>
+                            <p class="text-sm text-emerald-700 font-medium mt-0.5">Saving this verifies your 2026 tax deductions.</p>
                         </div>
                     </div>
 
-                    <button type="submit"
-                        class="w-full mt-10 py-5 bg-indigo-600 text-white font-bold rounded-2xl text-lg hover:bg-indigo-700 transform hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-lg shadow-indigo-200 relative z-10">
-                        Confirm and Log Transaction
+                    <button type="submit" 
+                            class="w-full mt-8 py-5 bg-indigo-600 text-white rounded-[1.5rem] font-bold text-lg shadow-xl shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-1 transition-all active:scale-95">
+                        Audit and Save Transaction
                     </button>
 
-                    <!-- Decorative blur behind form -->
-                    <div class="absolute -bottom-24 -right-24 w-64 h-64 bg-indigo-600/10 rounded-full blur-[60px]">
-                    </div>
+                    <div class="absolute -bottom-24 -right-24 w-64 h-64 bg-indigo-600/10 rounded-full blur-[60px]"></div>
                 </div>
             </form>
         </div>

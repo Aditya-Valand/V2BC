@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from database.user import get_user_by_email
+from database.user import get_full_user_profile
 from database.config import get_db_connection
 from services.rule_engine import ComplianceEngine
 from services.calculator import BusinessCalculator
@@ -67,11 +68,47 @@ def fssai_status(user):
     return render_template('fssai_details.html', fssai=fssai_details, user=user)
 
 
+# web/routes/compliance.py
+
 @compliance_bp.route('/tax-calendar')
 @token_required
 def tax_calendar(user):
     """
-    Provides a tax filing calendar based on business profile.
+    Provides a dynamic tax filing calendar based on business profile.
     """
+    # 1. Fetch full user and business profile data
+    raw_user = get_full_user_profile(user['email'])
+    if not raw_user:
+        return redirect(url_for('auth.login'))
+    
+    user_dict = dict(raw_user)
+    
+    # 2. Gather necessary transactional data for Wage Compliance
+    conn = get_db_connection()
+    tx_rows = conn.execute('SELECT * FROM transactions WHERE user_id = ?', (user_dict['id'],)).fetchall()
+    salary_txs = [tx for tx in tx_rows if tx['category'] == 'Salary']
+    total_salary_paid = sum(tx['amount'] for tx in salary_txs)
+    tx_count = len(tx_rows)
+    conn.close()
 
-    return render_template('tax_calendar.html')
+    # 3. Calculate Labour Data
+    emp_count = user_dict.get('employees_count', 1)
+    avg_daily_wage = total_salary_paid / (emp_count * 26) if emp_count > 0 and total_salary_paid > 0 else 0
+    
+    labour_data = {
+        "current_wage": round(avg_daily_wage, 2),
+        "min_required": 190, # 2026 Floor Wage
+        "is_compliant": avg_daily_wage >= 190 or emp_count == 0
+    }
+
+    # 4. Generate the Advance Tax Schedule
+    tax_analysis = BusinessCalculator.calculate_presumptive_tax(user_dict.get('annual_turnover', 0))
+
+    # 5. Package everything into the 'user' variable expected by the template
+    dashboard_data = {
+        "profile": user_dict,
+        "labour": labour_data,
+        "tax": tax_analysis
+    }
+
+    return render_template('tax_calendar.html', user=dashboard_data)
