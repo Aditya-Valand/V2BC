@@ -3,7 +3,7 @@
 {% block title %}Business Setup{% endblock %}
 
 {% block content %}
-<section class="flex text-sm flex-col items-center py-12 px-6 bg-slate-50 min-h-screen" x-data="multiStepOnboarding()">
+<section class="flex text-sm flex-col items-center py-12 px-6 min-h-screen" x-data="multiStepOnboarding()">
 
     <div class="w-full max-w-xl mb-8">
         <div class="flex justify-between items-end mb-3">
@@ -76,22 +76,23 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-600 mb-1.5">Commencement Date</label>
-                        <input type="date" x-model="formData.commencement_date" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                        <input type="date" x-model="formData.commencement_date" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-indigo-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-600 mb-1.5">Employees</label>
-                        <select x-model="formData.employees_count" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-                            <option value="0">Self only (0)</option>
-                            <option value="1-5">1–5</option>
-                            <option value="6-10">6–10</option>
-                            <option value="10+">10+</option>
-                        </select>
+                        <input type="text" x-model="formData.employees_count" placeholder="Number of employees" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-indigo-500">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
-                    <input type="text" x-model="formData.state" placeholder="State" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg">
-                    <input type="text" x-model="formData.district" placeholder="District" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1.5">State</label>
+                        <input type="text" x-model="formData.state" placeholder="State" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1.5">District</label>
+                        <input type="text" x-model="formData.district" placeholder="District" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-indigo-500">
+                    </div>
                 </div>
 
                 <div>
@@ -120,13 +121,7 @@
 
                 <div>
                     <label class="block text-sm font-medium text-slate-600 mb-1.5">Annual Turnover</label>
-                    <select x-model="formData.annual_turnover" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-                        <option value="<10">Less than ₹10 lakh</option>
-                        <option value="10-20">₹10–20 lakh</option>
-                        <option value="20-40">₹20–40 lakh</option>
-                        <option value="40-100">₹40 lakh–₹1 crore</option>
-                        <option value=">100">Above ₹1 crore</option>
-                    </select>
+                    <input type="text" x-model="formData.annual_turnover" placeholder="Annual Turnover" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-indigo-500">
                 </div>
 
                 <div>
@@ -202,9 +197,31 @@ function multiStepOnboarding() {
         stepTitle() { return ['About You', 'Operations', 'Financials', 'Readiness'][this.step - 1] },
         async submitForm() {
             this.loading = true;
-            setTimeout(() => { alert('Profile Successfully Saved!'); this.loading = false; }, 1200);
+            try {
+                const response = await fetch('/profile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(this.formData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    window.location.href = result.redirect || '/dashboard';
+                } else {
+                    alert(result.message || 'Something went wrong. Please check your data.');
+                }
+            } catch (err) {
+                console.error("Submission error:", err);
+                alert('Connection error. Is the server running?');
+            } finally {
+                this.loading = false;
+            }
         }
     }
 }
+
 </script>
 {% endblock %}

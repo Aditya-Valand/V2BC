@@ -12,7 +12,7 @@ transactions_bp = Blueprint('transactions', __name__)
 ocr_tool = DocumentAI()
 
 # Configure where to store uploaded bill images
-UPLOAD_FOLDER = 'web/static/uploads'
+UPLOAD_FOLDER = './static/uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
@@ -42,7 +42,7 @@ def scan_bill(user):
 
     # Trigger your DocumentAI pipeline
     extracted_data = ocr_tool.extract_data(filepath)
-    
+
     # Add the current date if OCR failed to find it
     if not extracted_data.get('date'):
         extracted_data['date'] = datetime.now().strftime('%Y-%m-%d')
@@ -75,5 +75,5 @@ def save_transaction(user):
         flash("Bill saved and logged successfully!", "success")
     except Exception as e:
         flash(f"Error saving transaction: {str(e)}", "danger")
-    
+
     return redirect(url_for('dashboard.dashboard'))
