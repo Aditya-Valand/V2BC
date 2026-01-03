@@ -52,10 +52,12 @@
                     <i class="ph-bold ph-calendar-check text-indigo-600"></i>
                     Tax Calendar
                 </button>
-                <button class="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition">
-                    <i class="ph-bold ph-plus"></i>
-                    Add Record
-                </button>
+                <form action="{{ url_for('transactions.scan_bill') }}" method="POST" enctype="multipart/form-data">
+    <input type="file" name="bill_image" id="bill_upload" class="hidden" onchange="this.form.submit()">
+    <button type="button" onclick="document.getElementById('bill_upload').click()" class="bg-indigo-600 text-white px-6 py-2 rounded-xl">
+        + Add Record
+    </button>
+</form>
             </div>
         </header>
 

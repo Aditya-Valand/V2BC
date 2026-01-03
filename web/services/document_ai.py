@@ -1,78 +1,88 @@
-import cv2
-import pytesseract
-import re
-from PIL import Image
-import numpy as np
+from google import genai
+from google.genai import types
+import json
+import os
+
 
 class DocumentAI:
-    def __init__(self, tesseract_path=None):
-        if tesseract_path:
-            pytesseract.pytesseract.tesseract_cmd = tesseract_path
+    def __init__(self, api_key: str | None = None):
+        # Just store the key, don't use it yet
+        self.api_key = api_key
+        self._client = None
 
-    def preprocess_image(self, image_path):
-        """Clean the image to improve OCR accuracy for various invoice types."""
-        # Load image with OpenCV
-        img = cv2.imread(image_path)
-        
-        # 1. Convert to Grayscale
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        
-        # 2. Denoise and sharpen
-        denoised = cv2.fastNlMeansDenoising(gray, None, 10, 7, 21)
-        
-        # 3. Thresholding (Binarization) to make text pop
-        # Uses Otsu's method to automatically find the best threshold
-        thresh = cv2.threshold(denoised, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-        
-        return thresh
+    @property
+    def client(self):
+        """Only creates the Gemini client when it's actually needed."""
+        if self._client is None:
+            # Fallback to env variable if no key was passed to __init__
+            key = self.api_key or os.getenv("GEMINI_API_KEY")
+            if not key:
+                raise ValueError("Missing Gemini API Key! Set GEMINI_API_KEY in your .env file.")
+            self._client = genai.Client(api_key=key)
+        return self._client
 
-    def extract_data(self, image_path):
-        """Main pipeline to extract structured data from any invoice image."""
-        processed_img = self.preprocess_image(image_path)
-        
-        # Perform OCR
-        # PSM 6: Assume a single uniform block of text
-        raw_text = pytesseract.image_to_string(processed_img, config='--psm 6')
-        
-        return self.parse_text(raw_text)
+    def extract_data(self, image_path: str) -> dict:
+        """
+        Main pipeline:
+        Image → Gemini Vision → Structured JSON
+        """
+        with open(image_path, "rb") as f:
+            image_bytes = f.read()
 
-    def parse_text(self, text):
-        """Uses regex patterns to find fields across different invoice formats."""
-        data = {
-            "vendor_name": "Unknown",
-            "date": None,
-            "total_amount": 0.0,
-            "gstin": None,
-            "invoice_number": None
-        }
+        prompt = """
+        You are an intelligent document parser.
 
-        # 1. Extract GSTIN (15-digit Indian format)
-        gstin_pattern = r'\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}'
-        gstin_match = re.search(gstin_pattern, text)
-        if gstin_match:
-            data["gstin"] = gstin_match.group(0)
+        Extract the following fields from this invoice image:
+        - vendor_name
+        - invoice_number
+        - gstin
+        - invoice_date
+        - total_amount
 
-        # 2. Extract Total Amount
-        # Looks for keywords like Total, Amount, Payable, Net followed by a number
-        amount_pattern = r'(?:TOTAL|AMOUNT|PAYABLE|NET|GRAND TOTAL)\s*[:\-\s]*[₹Rs\.]*\s*([\d,]+\.?\d*)'
-        amounts = re.findall(amount_pattern, text, re.IGNORECASE)
-        if amounts:
-            # Take the largest numeric value found near "Total" keywords
-            data["total_amount"] = max([float(a.replace(',', '')) for a in amounts])
+        Rules:
+        - Return ONLY valid JSON
+        - Use null if a field is missing
+        - total_amount must be a number (not string)
+        - Do NOT add explanations
+        """
 
-        # 3. Extract Date (Handles DD/MM/YY, DD-MM-YYYY, etc.)
-        date_pattern = r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})'
-        date_match = re.search(date_pattern, text)
-        if date_match:
-            data["date"] = date_match.group(1)
+        response = self.client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[
+                types.Part.from_bytes(
+                    data=image_bytes,
+                    mime_type="image/jpeg"
+                ),
+                prompt
+            ]
+        )
 
-        # 4. Vendor Name (Heuristic: usually the first non-numeric line)
-        lines = [l.strip() for l in text.split('\n') if l.strip()]
-        if lines:
-            data["vendor_name"] = lines[0]
+        return self._safe_json_parse(response.text)
 
-        return data
+    def _safe_json_parse(self, text: str) -> dict:
+        """
+        Safely parse JSON even if model adds extra text accidentally.
+        """
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            # fallback: extract JSON block
+            start = text.find("{")
+            end = text.rfind("}") + 1
+            if start != -1 and end != -1:
+                return json.loads(text[start:end])
 
-# Usage Example:
+            # absolute fallback
+            return {
+                "vendor_name": None,
+                "invoice_number": None,
+                "gstin": None,
+                "invoice_date": None,
+                "total_amount": None,
+            }
+
+
+# ---------------- USAGE ----------------
 # ai = DocumentAI()
-# result = ai.extract_data('path/to/invoice.jpg')
+# result = ai.extract_data("invoice.jpg")
+# print(result)

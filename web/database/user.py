@@ -46,6 +46,22 @@ def get_user_by_email(email):
     conn.close()
     return user
 
+def get_full_user_profile(email):
+    """
+    Fetches both basic user identity and extended business profile data in one query.
+    Used to prevent IndexErrors in the dashboard by ensuring business keys are present.
+    """
+    conn = get_db_connection()
+    # LEFT JOIN ensures we still get user data even if the business profile isn't filled yet
+    query = """
+        SELECT u.*, p.* FROM users u
+        LEFT JOIN business_profiles p ON u.id = p.user_id
+        WHERE u.email = ?;
+    """
+    user = conn.execute(query, (email,)).fetchone()
+    conn.close()
+    return user
+
 def save_business_profile(user_id, data):
     """Inserts or updates a business profile for a specific user."""
     conn = get_db_connection()

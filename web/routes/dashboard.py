@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, request, jsonify
-from database.user import get_user_by_email, save_business_profile, get_business_profile, user_profile_status_update
+from database.user import get_user_by_email, save_business_profile, get_business_profile, user_profile_status_update,get_full_user_profile
 from database.config import get_db_connection # Import your connection helper
 from services.rule_engine import ComplianceEngine
 from services.calculator import BusinessCalculator
@@ -11,14 +11,13 @@ dashboard_bp = Blueprint('dashboard', __name__)
 @dashboard_bp.route('/dashboard', methods=['GET'])
 @token_required
 def dashboard(user):
-    """
-    Dashboard route using raw SQLite queries.
-    """
-    # 1. Fetch user data using your existing helper function
+    # # 1. Fetch combined data using the new JOIN function
+    # user = get_full_user_profile(user['email'])
+    
+    # if not user:
+    #     return redirect(url_for('auth.login'))
 
-
-    # 2. Get Transaction Count (Using Raw SQL)
-    # This is needed for the Digital Trust Score logic
+    # # 2. Get Transaction Count (for Digital Trust Score)
     # conn = get_db_connection()
     # tx_row = conn.execute(
     #     'SELECT COUNT(*) as count FROM transactions WHERE user_id = ?',
@@ -28,25 +27,29 @@ def dashboard(user):
     # conn.close()
 
     # # 3. GATHER DATA FROM SERVICES
+    # # Map the new table column names correctly
+    # biz_type = user['business_type'] if user['business_type'] else "General"
+    # turnover = user['annual_turnover'] if user['annual_turnover'] else 0
+    # state = user['state'] if user['state'] else "General"
 
-    # # A. Compliance (Pass values from the SQLite Row dictionary)
-    # compliance_report = ComplianceEngine.validate_business(
-    #     user['biz_type'],
-    #     user['annual_turnover'],
-    #     state=user['state']
-    # )
+    # # A. Compliance Checklist
+    # compliance_report = ComplianceEngine.validate_business(biz_type, turnover, state=state)
 
-    # # B. Tax Calculation
-    # tax_analysis = BusinessCalculator.calculate_presumptive_tax(user['annual_turnover'])
+    # # B. Tax & Savings Analysis
+    # tax_analysis = BusinessCalculator.calculate_presumptive_tax(turnover)
 
-    # # C. Credit Score Logic
-    # # Converting the SQLite Row to a dict so the Engine can read it easily
-    # user_dict = dict(user)
-    # credit_score, reasons = LoanEligibilityEngine.get_readiness_score(user_dict, tx_count)
+    # # C. Credit Readiness (Digital Trust)
+    # # Map Integer booleans (0/1) to Python Booleans
+    # readiness_data = {
+    #     "has_udyam": bool(user['udyam_registered']),
+    #     "has_itr": bool(user['previous_itr_filed']),
+    #     "has_gst": bool(user['gstin_available'])
+    # }
+    # credit_score, reasons = LoanEligibilityEngine.get_readiness_score(readiness_data, tx_count)
 
-    # # 4. PACKAGE DATA FOR THE FRONTEND
+    # # 4. PACKAGE DATA FOR FRONTEND
     # dashboard_data = {
-    #     "profile": user, # This is the SQLite Row object
+    #     "profile": user,
     #     "compliance": compliance_report,
     #     "tax": tax_analysis,
     #     "credit": {
@@ -54,9 +57,9 @@ def dashboard(user):
     #         "reasons": reasons
     #     },
     #     "labour": {
-    #         # Assuming your user table has 'avg_daily_wage' column
-    #         "is_compliant": user['avg_daily_wage'] >= 190 if 'avg_daily_wage' in user.keys() else True,
-    #         "gap": max(0, 190 - user['avg_daily_wage']) if 'avg_daily_wage' in user.keys() else 0
+    #         # 2026 Floor Wage Check (Projected ₹190)
+    #         "is_compliant": (user['employees_count'] or 0) == 0 or (user.get('avg_daily_wage', 0) >= 190),
+    #         "gap": max(0, 190 - (user.get('avg_daily_wage', 0)))
     #     }
     # }
 
