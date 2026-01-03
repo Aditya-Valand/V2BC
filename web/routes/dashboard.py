@@ -21,27 +21,27 @@ def dashboard(user):
     # This is needed for the Digital Trust Score logic
     conn = get_db_connection()
     tx_row = conn.execute(
-        'SELECT COUNT(*) as count FROM transactions WHERE user_id = ?', 
+        'SELECT COUNT(*) as count FROM transactions WHERE user_id = ?',
         (user['id'],)
     ).fetchone()
     tx_count = tx_row['count'] if tx_row else 0
     conn.close()
 
     # 3. GATHER DATA FROM SERVICES
-    
+
     # A. Compliance (Pass values from the SQLite Row dictionary)
     compliance_report = ComplianceEngine.validate_business(
-        user['biz_type'], 
-        user['annual_turnover'], 
+        user['biz_type'],
+        user['annual_turnover'],
         state=user['state']
     )
-    
+
     # B. Tax Calculation
     tax_analysis = BusinessCalculator.calculate_presumptive_tax(user['annual_turnover'])
-    
+
     # C. Credit Score Logic
     # Converting the SQLite Row to a dict so the Engine can read it easily
-    user_dict = dict(user) 
+    user_dict = dict(user)
     credit_score, reasons = LoanEligibilityEngine.get_readiness_score(user_dict, tx_count)
 
     # 4. PACKAGE DATA FOR THE FRONTEND
