@@ -5,7 +5,7 @@ lib64/
 pyenv.cfg
 venv/
 ENV/
-
+.venv/
 .env
 web/.env
 

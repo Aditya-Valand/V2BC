@@ -73,7 +73,7 @@ BUSINESS_MAP = {
 
     # --- GROUP 3: SKILLED SERVICES (Freelancers & Pros) ---
     'web_developer': {
-        'label': '💻 Web & App Developer',
+        'label': 'Web & App Developer',
         'sector': 'Freelance Professional',
         'gst_rate': 0.18,  # Standard for IT
         'threshold': 2000000,

@@ -1,10 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from datetime import datetime, date
-from web.models.transaction import Transaction
-from web.models.user import User
+from web.database.transaction import Transaction
+from web.database.user import User
 from web.services.rule_engine import ComplianceEngine
 from web.services.calculator import BusinessCalculator
-from web.services.loan_engine import LoanEligibilityEngine
+from web.services.rule_engine import LoanEligibilityEngine
 from web.services.document_ai import DocumentAI
 import os
 
