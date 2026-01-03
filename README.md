@@ -5,6 +5,13 @@ Repository for teamzero - Vibe Coding Hackathon
 Activate virtual enviornment before installing required packages.
 
 ```
+git clone https://github.com/ByteQuest-2025/GFGBQ-Team-teamzero.git
+cd GFGBQ-Team-teamzero
+python3 -m venv .venv
+pip3 install -r requirements.txt
+```
+
+```
 cd web
 python app.py
 ```
