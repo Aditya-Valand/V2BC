@@ -19,6 +19,7 @@ BUSINESS_MAP = {
         'gst_rate': 0.05,  # Standalone restaurant rate
         'threshold': 2000000,
         'licenses': ['FSSAI Basic', 'Shop Act'],
+        'is_food_biz': True,
         'jargon_free_tip': "Keep your FSSAI updated to avoid ₹2L fines. No GST needed if sales < ₹20L.",
         'loan_hint': "Eligible for MUDRA Shishu loans up to ₹50,000 for kitchen tools."
     },
@@ -124,6 +125,8 @@ BUSINESS_MAP = {
         'gst_rate': 0.00,  # Handled by platform
         'threshold': 2000000,
         'licenses': ['e-Shram UAN', 'Welfare Board ID'],
+        'welfare_fund_rate': 0.02, # 1-2% of turnover
+        'min_engagement_days': 90, # 90 days needed to qualify for benefits
         'jargon_free_tip': "Your platform handles the GST. Focus on your e-Shram benefits for insurance.",
         'loan_hint': "Eligible for PM-SVANidhi micro-loans based on platform ratings."
     }
@@ -146,7 +149,12 @@ class ComplianceEngine:
         biz = BUSINESS_MAP.get(biz_key)
         if not biz or turnover < 0:
             return ComplianceResult("Invalid Input", "Enter valid business data.", "gray", [], False)
-
+        if biz.get('sector') == 'Gig Economy':
+            checklist.append(f"🔴 Aggregator must contribute {biz['welfare_fund_rate']*100}% to Welfare Fund.")
+            checklist.append("🔹 Port your benefits via Aadhaar-linked e-Shram ID.")
+        if biz.get('is_food_biz'):
+            fssai_tier = "Basic (₹100)" if turnover <= 1200000 else "State (₹2000+)"
+            checklist.append(f"🍔 Required License: FSSAI {fssai_tier}")    
         # 2026 Special State Logic (Northeast/Hills)
         special_states = ["Manipur", "Mizoram", "Nagaland", "Tripura", "Arunachal", "Meghalaya", "Sikkim", "Puducherry"]
         threshold = 1000000 if state in special_states and biz['sector'] in ['Service', 'Gig Economy'] else biz['threshold']
