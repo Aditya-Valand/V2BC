@@ -6,6 +6,7 @@ from routes.transactions import transactions_bp
 from middlewares import guest
 from routes.auth import auth_bp
 from routes.dashboard import dashboard_bp
+from routes.compliance import compliance_bp
 
 load_dotenv()
 
@@ -18,6 +19,7 @@ app.config['GEMINI_API_KEY'] = os.getenv('GEMINI_API_KEY')
 app.register_blueprint(auth_bp, url_prefix='/auth')
 app.register_blueprint(dashboard_bp, url_prefix='/')
 app.register_blueprint(transactions_bp, url_prefix='/')
+app.register_blueprint(compliance_bp, url_prefix='/')
 
 # Setup the database table when we start the app
 db_config.init_db()
