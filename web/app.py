@@ -1,11 +1,16 @@
+import os
+from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for
 import database.config as db_config
 from middlewares import guest
 from routes.auth import auth_bp
 from routes.dashboard import dashboard_bp
 
+load_dotenv()
+
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['GEMINI_API_KEY'] = os.getenv('GEMINI_API_KEY')
 
 
 # Routes

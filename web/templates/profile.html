@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Business Setup{% endblock %}
+
+{% block content %}
+<section class="flex text-sm flex-col items-center py-12 px-6 bg-slate-50 min-h-screen" x-data="multiStepOnboarding()">
+
+    <div class="w-full max-w-xl mb-8">
+        <div class="flex justify-between items-end mb-3">
+            <div>
+                <h1 class="text-xl font-bold text-slate-800" x-text="stepTitle()"></h1>
+                <p class="text-xs text-slate-500 uppercase tracking-widest font-semibold" x-text="'Step ' + step + ' of 4'"></p>
+            </div>
+            <span class="text-indigo-600 font-bold text-sm" x-text="progress + '%'"></span>
+        </div>
+        <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+            <div class="bg-indigo-600 h-full transition-all duration-700 ease-in-out" :style="'width: ' + progress + '%'"></div>
+        </div>
+    </div>
+
+    <div class="w-full max-w-xl bg-white p-8 rounded-2xl shadow-sm border border-slate-100 min-h-[580px] flex flex-col relative overflow-hidden">
+
+        <form @submit.prevent="submitForm" class="flex-1 flex flex-col relative">
+
+            <div x-show="step === 1"
+                 x-transition:enter="transition ease-out duration-500 delay-200"
+                 x-transition:enter-start="opacity-0 translate-x-8"
+                 x-transition:enter-end="opacity-100 translate-x-0"
+                 x-transition:leave="transition ease-in duration-300 absolute w-full"
+                 x-transition:leave-start="opacity-100 translate-x-0"
+                 x-transition:leave-end="opacity-0 -translate-x-8"
+                 class="space-y-6">
+
+                <div class="relative" x-data="{ open: false }">
+                    <label class="block text-sm font-medium text-slate-600 mb-1.5">Business Type</label>
+                    <button type="button" @click="open = !open" class="flex items-center justify-between w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700">
+                        <span x-text="formData.business_type || 'Select your niche'"></span>
+                        <i class="ph-bold ph-caret-down text-slate-400"></i>
+                    </button>
+                    <div x-show="open" @click.away="open = false" class="absolute z-30 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
+                        <template x-for="item in ['Web Developer', 'Graphic Designer', 'Consultant', 'Shop / Kirana Store', 'Restaurant', 'Tea Stall', 'Tailor', 'Gig Worker', 'Other']">
+                            <button type="button" @click="formData.business_type = item; open = false" class="w-full px-4 py-2 text-left text-sm hover:bg-indigo-50 transition" x-text="item"></button>
+                        </template>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-3">Legal Structure</label>
+                    <div class="grid grid-cols-1 gap-2">
+                        <template x-for="opt in ['Individual Freelancer', 'Sole Proprietorship', 'Partnership']">
+                            <button type="button" @click="formData.legal_structure = opt"
+                                :class="formData.legal_structure === opt ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-100 bg-slate-50 text-slate-500'"
+                                class="flex items-center gap-3 px-4 py-2.5 border rounded-lg transition-all text-sm">
+                                <i class="ph-bold" :class="formData.legal_structure === opt ? 'ph-check-circle' : 'ph-circle'"></i>
+                                <span class="font-medium" x-text="opt"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1.5">Business Name</label>
+                    <input type="text" x-model="formData.business_name" placeholder="Trade name" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
+            <div x-show="step === 2"
+                 x-transition:enter="transition ease-out duration-500 delay-200"
+                 x-transition:enter-start="opacity-0 translate-x-8"
+                 x-transition:enter-end="opacity-100 translate-x-0"
+                 x-transition:leave="transition ease-in duration-300 absolute w-full"
+                 x-transition:leave-start="opacity-100 translate-x-0"
+                 x-transition:leave-end="opacity-0 -translate-x-8"
+                 class="space-y-6">
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1.5">Commencement Date</label>
+                        <input type="date" x-model="formData.commencement_date" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1.5">Employees</label>
+                        <select x-model="formData.employees_count" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+                            <option value="0">Self only (0)</option>
+                            <option value="1-5">1–5</option>
+                            <option value="6-10">6–10</option>
+                            <option value="10+">10+</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="text" x-model="formData.state" placeholder="State" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                    <input type="text" x-model="formData.district" placeholder="District" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-3">Mode of Sales</label>
+                    <div class="grid grid-cols-1 gap-2">
+                        <template x-for="mode in [{id:'local', label:'Local Only'}, {id:'interstate', label:'Inter-state'}, {id:'international', label:'International'}, {id:'online', label:'Online'}]">
+                            <button type="button" @click="formData.mode_of_sales =  mode.id"
+                                :class="formData.mode_of_sales ===  mode.id ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-100 bg-slate-50 text-slate-500'"
+                                class="flex items-center gap-3 px-4 py-2.5 border rounded-lg transition-all text-sm">
+                                <i class="ph-bold" :class="formData.mode_of_sales === mode.id ? 'ph-check-circle' : 'ph-circle'"></i>
+                                <span class="font-medium" x-text="mode.label"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <div x-show="step === 3"
+                 x-transition:enter="transition ease-out duration-500 delay-200"
+                 x-transition:enter-start="opacity-0 translate-x-8"
+                 x-transition:enter-end="opacity-100 translate-x-0"
+                 x-transition:leave="transition ease-in duration-300 absolute w-full"
+                 x-transition:leave-start="opacity-100 translate-x-0"
+                 x-transition:leave-end="opacity-0 -translate-x-8"
+                 class="space-y-6">
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1.5">Annual Turnover</label>
+                    <select x-model="formData.annual_turnover" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+                        <option value="<10">Less than ₹10 lakh</option>
+                        <option value="10-20">₹10–20 lakh</option>
+                        <option value="20-40">₹20–40 lakh</option>
+                        <option value="40-100">₹40 lakh–₹1 crore</option>
+                        <option value=">100">Above ₹1 crore</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-3">Existing Loans</label>
+                    <div class="grid grid-cols-1 gap-2">
+                        <template x-for="loan in ['None', 'Business', 'Personal']">
+                            <button type="button" @click="formData.existing_loans = loan"
+                                :class="formData.existing_loans ===  loan ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-100 bg-slate-50 text-slate-500'"
+                                class="flex items-center gap-3 px-4 py-2.5 border rounded-lg transition-all text-sm">
+                                <i class="ph-bold" :class="formData.existing_loans === loan ? 'ph-check-circle' : 'ph-circle'"></i>
+                                <span class="font-medium" x-text="loan"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <div x-show="step === 4"
+                 x-transition:enter="transition ease-out duration-500 delay-200"
+                 x-transition:enter-start="opacity-0 translate-x-8"
+                 x-transition:enter-end="opacity-100 translate-x-0"
+                 x-transition:leave="transition ease-in duration-300 absolute w-full"
+                 x-transition:leave-start="opacity-100 translate-x-0"
+                 x-transition:leave-end="opacity-0 -translate-x-8"
+                 class="space-y-3">
+
+                <template x-for="field in [
+                    { label: 'PAN Card Available?', key: 'pan_available' },
+                    { label: 'Registered for GST?', key: 'gstin_available' },
+                    { label: 'Udyam Registered?', key: 'udyam_registered' },
+                    { label: 'Business Bank Account?', key: 'business_bank_account' },
+                    { label: 'Digital Payments?', key: 'digital_payments_enabled' },
+                    { label: 'Filed ITR?', key: 'previous_itr_filed' }
+                ]">
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                        <span class="text-sm text-slate-600" x-text="field.label"></span>
+                        <div class="flex gap-2">
+                            <button type="button" @click="formData[field.key] = 'Yes'"
+                                :class="formData[field.key] === 'Yes' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-400'"
+                                class="px-3 py-1 text-[10px] font-black rounded transition">YES</button>
+                            <button type="button" @click="formData[field.key] = 'No'"
+                                :class="formData[field.key] === 'No' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-400'"
+                                class="px-3 py-1 text-[10px] font-black rounded transition">NO</button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <div class="mt-auto pt-8 flex gap-3 bg-white z-10">
+                <button type="button" x-show="step > 1" @click="step--" class="flex-1 py-2.5 text-slate-500 font-bold text-sm hover:bg-slate-100 rounded-lg transition-colors">BACK</button>
+                <button type="button" x-show="step < 4" @click="step++" class="flex-[2] py-2.5 bg-indigo-600 text-white font-bold text-sm rounded-lg shadow-lg shadow-indigo-100 active:scale-95 transition-all">NEXT</button>
+                <button type="submit" x-show="step === 4" :disabled="loading" class="flex-[2] py-2.5 bg-green-600 text-white font-bold text-sm rounded-lg shadow-lg shadow-green-100 active:scale-95 transition-all">
+                    <span x-text="loading ? 'SAVING...' : 'FINISH'"></span>
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<script>
+function multiStepOnboarding() {
+    return {
+        step: 1, loading: false,
+        formData: {
+            business_type: '', legal_structure: '', business_name: '',
+            commencement_date: '', employees_count: '0', state: '', district: '',
+            mode_of_sales: 'local', annual_turnover: '<10', nature_of_income: 'Services',
+            income_frequency: 'Regular', existing_loans: 'None',
+            pan_available: 'No', gstin_available: 'No', udyam_registered: 'No',
+            business_bank_account: 'No', digital_payments_enabled: 'No', previous_itr_filed: 'No'
+        },
+        get progress() { return (this.step / 4) * 100 },
+        stepTitle() { return ['About You', 'Operations', 'Financials', 'Readiness'][this.step - 1] },
+        async submitForm() {
+            this.loading = true;
+            setTimeout(() => { alert('Profile Successfully Saved!'); this.loading = false; }, 1200);
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -2,7 +2,7 @@ bin/
 include/
 lib/
 lib64/
-pyenv.cfg
+pyvenv.cfg
 venv/
 ENV/
 .venv/
@@ -14,7 +14,9 @@ web/__pycache__/
 *.py[cod]
 *$py.class
 
-web/project_db.sqlite
+web/database/__pycache__/
+web/routes/__pycache__/
+web/database/project_database.sqlite
 
 .DS_Store
 Thumbs.db
