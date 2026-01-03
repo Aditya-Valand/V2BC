@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<h1>Welcome to your Dashboard</h1>
+<p>You are logged in as {{ session['user_email'] }}</p>
+
+<p>Hello, {{ user.name }}!</p>
+
+<form action="{{ url_for('auth.signout') }}" method="POST">
+    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg">Sign Out</button>
+</form>
+
+{% endblock %}

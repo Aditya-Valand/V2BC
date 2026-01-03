@@ -1,9 +1,108 @@
 {% extends "base.html" %}
 
-{% block title %}User Dashboard{% endblock %}
+{% block title %}Sign In{% endblock %}
 
 {% block content %}
+<section class="flex flex-col items-center p-6" x-data="authForm()">
 
+    <div class="w-full max-w-md flex p-1 bg-white rounded-xl mb-6">
+        <button @click="mode = 'signin'"
+            :class="mode === 'signin' ? 'bg-indigo-600 shadow-sm text-white' : 'text-slate-500'"
+            class="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all">
+            <i class="ph-bold ph-sign-in"></i> Sign In
+        </button>
+        <button @click="mode = 'signup'"
+            :class="mode === 'signup' ? 'bg-indigo-600 shadow-sm text-white' : 'text-slate-500'"
+            class="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all">
+            <i class="ph-bold ph-user-plus"></i> Sign Up
+        </button>
+    </div>
 
+    <div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-sm">
+        <template x-if="message">
+            <div :class="isError ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'"
+                 class="mb-4 p-3 rounded-lg text-sm font-medium transition" x-text="message"></div>
+        </template>
 
+        <header class="mb-8">
+            <h2 class="text-2xl font-bold text-slate-800" x-text="mode === 'signin' ? 'Welcome back' : 'Create account'"></h2>
+            <p class="text-slate-500 text-sm mt-1" x-text="mode === 'signin' ? 'Enter your credentials to access your account.' : 'Join us by filling out the form below.'"></p>
+        </header>
+
+        <form @submit.prevent="submitForm" class="space-y-5">
+            <div x-show="mode === 'signup'">
+                <label class="block text-sm font-medium text-slate-600 mb-1.5">Full Name</label>
+                <div class="flex items-center gap-3 px-3 w-full border border-slate-200 rounded-lg focus-within:border-indigo-500">
+                    <i class="ph-bold ph-user text-slate-400"></i>
+                    <input type="text" x-model="formData.name" placeholder="Sarah Connor" class="w-full py-2 outline-none bg-transparent">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1.5">Email</label>
+                <div class="flex items-center gap-3 px-3 w-full border border-slate-200 rounded-lg focus-within:border-indigo-500">
+                    <i class="ph-bold ph-envelope-simple text-slate-400"></i>
+                    <input type="email" x-model="formData.email" required placeholder="name@email.com" class="w-full py-2 outline-none bg-transparent">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1.5">Password</label>
+                <div class="flex items-center gap-3 px-3 w-full border border-slate-200 rounded-lg focus-within:border-indigo-500">
+                    <i class="ph-bold ph-lock-simple text-slate-400"></i>
+                    <input type="password" x-model="formData.password" required placeholder="••••••••" class="w-full py-2 outline-none bg-transparent">
+                </div>
+            </div>
+
+            <button type="submit" :disabled="loading" class="w-full py-2.5 bg-indigo-600 text-white rounded-lg font-semibold disabled:opacity-50">
+                <span x-show="!loading" x-text="mode === 'signin' ? 'Sign In' : 'Get Started'"></span>
+                <span x-show="loading">Processing...</span>
+            </button>
+        </form>
+    </div>
+</section>
+
+<script>
+function authForm() {
+    return {
+        mode: 'signin',
+        loading: false,
+        message: '',
+        isError: false,
+        formData: {
+            name: '',
+            email: '',
+            password: ''
+        },
+        async submitForm() {
+            this.loading = true;
+            this.message = '';
+
+            const endpoint = this.mode === 'signin' ? '/auth/signin' : '/auth/signup';
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.formData)
+                });
+
+                const result = await response.json();
+                this.message = result.message;
+                this.isError = !result.success;
+
+                if (result.success) {
+                    // Redirect on success after a short delay
+                    setTimeout(() => window.location.href = '/', 1000);
+                }
+            } catch (err) {
+                this.isError = true;
+                this.message = "An error occurred. Please try again.";
+            } finally {
+                this.loading = false;
+            }
+        }
+    }
+}
+</script>
 {% endblock %}

@@ -3,7 +3,7 @@ import sqlite3
 # All database-related functions are defined here.
 
 def get_db_connection():
-    conn = sqlite3.connect('project_db.sqlite')
+    conn = sqlite3.connect('./database/project_database.sqlite')
     # This allows us to access data by column name: user['name']
     conn.row_factory = sqlite3.Row
     return conn
@@ -20,7 +20,7 @@ def init_db():
             token TEXT,
             status TEXT DEFAULT 'active',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
+        );
     ''')
     conn.commit()
     conn.close()
