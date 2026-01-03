@@ -1,24 +1,21 @@
 from flask import Blueprint, render_template, redirect, url_for
-from web.database.user import get_user_by_email
-from web.database.config import get_db_connection # Import your connection helper
-from web.services.rule_engine import ComplianceEngine
-from web.services.calculator import BusinessCalculator
-from web.services.rule_engine import LoanEligibilityEngine
-from web.middlewares import token_required
+from database.user import get_user_by_email
+from database.config import get_db_connection # Import your connection helper
+from services.rule_engine import ComplianceEngine
+from services.calculator import BusinessCalculator
+from services.rule_engine import LoanEligibilityEngine
+from middlewares import token_required
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
 @dashboard_bp.route('/dashboard', methods=['GET'])
 @token_required
-def dashboard(user_from_token):
+def dashboard(user):
     """
     Dashboard route using raw SQLite queries.
     """
     # 1. Fetch user data using your existing helper function
-    user = get_user_by_email(user_from_token['email'])
     
-    if not user:
-        return redirect(url_for('auth.login'))
 
     # 2. Get Transaction Count (Using Raw SQL)
     # This is needed for the Digital Trust Score logic
@@ -63,4 +60,4 @@ def dashboard(user_from_token):
         }
     }
 
-    return render_template('dashboard.html', data=dashboard_data)
+    return render_template('dashboard.html' , data=dashboard_data)

@@ -13,6 +13,7 @@ def init_db():
     conn = get_db_connection()
     conn.execute(users_table())
     conn.execute(profiles_table())
+    conn.execute(transactions_table())
     conn.commit()
     conn.close()
 
@@ -35,5 +36,19 @@ def profiles_table():
         user_id INTEGER NOT NULL,
         bio TEXT,
         avatar_url TEXT,
+        FOREIGN KEY (user_id) REFERENCES users (id)
+    );"""
+
+def transactions_table():
+    return """CREATE TABLE IF NOT EXISTS transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        amount REAL NOT NULL,
+        category TEXT NOT NULL,      -- e.g., 'Inventory', 'Salary', 'Rent'
+        merchant TEXT,               -- Extracted Vendor Name
+        date TEXT NOT NULL,          -- Format: YYYY-MM-DD
+        gstin TEXT,                  -- 15-digit Indian GST Number
+        is_verified INTEGER DEFAULT 0, -- 1 if the user confirmed the AI extraction
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users (id)
     );"""
