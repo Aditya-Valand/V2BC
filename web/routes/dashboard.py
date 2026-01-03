@@ -15,7 +15,7 @@ def dashboard(user):
     Dashboard route using raw SQLite queries.
     """
     # 1. Fetch user data using your existing helper function
-    
+
 
     # 2. Get Transaction Count (Using Raw SQL)
     # This is needed for the Digital Trust Score logic
@@ -61,3 +61,9 @@ def dashboard(user):
     }
 
     return render_template('dashboard.html' , data=dashboard_data)
+
+
+@dashboard_bp.route('/profile', methods=['GET'])
+@token_required
+def profile(user):
+    return render_template('profile.html')

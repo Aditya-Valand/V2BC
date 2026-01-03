@@ -9,12 +9,12 @@ git clone https://github.com/ByteQuest-2025/GFGBQ-Team-teamzero.git
 cd GFGBQ-Team-teamzero
 python -m venv .
 source bin/activate
-pip3 install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 ```
 cd web
-python3 app.py
+python app.py
 ```
 
 

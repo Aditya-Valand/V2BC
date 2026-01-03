@@ -31,12 +31,29 @@ def users_table():
 
 
 def profiles_table():
-    return """CREATE TABLE IF NOT EXISTS profiles (
+    return """CREATE TABLE IF NOT EXISTS business_profiles (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        bio TEXT,
-        avatar_url TEXT,
-        FOREIGN KEY (user_id) REFERENCES users (id)
+        user_id INTEGER NOT NULL UNIQUE,
+        business_type TEXT NOT NULL,
+        legal_structure TEXT NOT NULL,
+        business_name TEXT NOT NULL,
+        commencement_date DATE NOT NULL,
+        employees_count NUMBER NOT NULL,
+        state TEXT NOT NULL,
+        district TEXT NOT NULL,
+        mode_of_sales TEXT NOT NULL,
+        annual_turnover INTEGER NOT NULL,
+        nature_of_income TEXT NOT NULL,
+        income_frequency TEXT NOT NULL,
+        existing_loans TEXT NOT NULL,
+        pan_available INTEGER DEFAULT 0,
+        gstin_available INTEGER DEFAULT 0,
+        udyam_registered INTEGER DEFAULT 0,
+        business_bank_account INTEGER DEFAULT 0,
+        digital_payments_enabled INTEGER DEFAULT 0,
+        previous_itr_filed INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
     );"""
 
 def transactions_table():
