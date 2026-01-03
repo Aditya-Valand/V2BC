@@ -18,8 +18,8 @@ def get_transactions_by_user(user_id):
     """Fetches all records for a specific user to power the Dashboard & Trust Score."""
     conn = get_db_connection()
     transactions = conn.execute('''
-        SELECT * FROM transactions 
-        WHERE user_id = ? 
+        SELECT * FROM transactions
+        WHERE user_id = ?
         ORDER BY date DESC;
     ''', (user_id,)).fetchall()
     conn.close()
@@ -29,11 +29,11 @@ def get_transaction_stats(user_id):
     """Calculates totals needed for 'Smart Financial Snapshots' on the dashboard."""
     conn = get_db_connection()
     stats = conn.execute('''
-        SELECT 
-            SUM(amount) as total_spent, 
+        SELECT
+            SUM(amount) as total_spent,
             COUNT(*) as tx_count,
             COUNT(DISTINCT category) as category_count
-        FROM transactions 
+        FROM transactions
         WHERE user_id = ?;
     ''', (user_id,)).fetchone()
     conn.close()

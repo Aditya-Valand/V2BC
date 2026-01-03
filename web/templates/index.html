@@ -1,108 +1,167 @@
 {% extends "base.html" %}
 
-{% block title %}Sign In{% endblock %}
+{% block title %}Authentication - BharatCompliance{% endblock %}
+
+{% block body_class %}h-screen flex items-center justify-center relative overflow-hidden{% endblock %}
 
 {% block content %}
-<section class="flex flex-col items-center p-6" x-data="authForm()">
+<main class="w-full max-w-md px-4 fade-in-up">
 
-    <div class="w-full max-w-md flex p-1 bg-white rounded-xl mb-6 mt-20">
-        <button @click="mode = 'signin'"
-            :class="mode === 'signin' ? 'bg-indigo-600 shadow-sm text-white' : 'text-slate-500'"
-            class="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all">
-            <i class="ph-bold ph-sign-in"></i> Sign In
-        </button>
-        <button @click="mode = 'signup'"
-            :class="mode === 'signup' ? 'bg-indigo-600 shadow-sm text-white' : 'text-slate-500'"
-            class="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all">
-            <i class="ph-bold ph-user-plus"></i> Sign Up
-        </button>
+    <div class="text-center mb-8">
+        <div
+            class="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200 mx-auto mb-4">
+            <i class="ph-bold ph-shield-check text-2xl"></i>
+        </div>
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">BharatCompliance</h1>
     </div>
 
-    <div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-sm">
-        <template x-if="message">
-            <div :class="isError ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'"
-                 class="mb-4 p-3 rounded-lg text-sm font-medium transition" x-text="message"></div>
-        </template>
+    <section x-data="authForm()">
 
-        <header class="mb-8">
-            <h2 class="text-2xl font-bold text-slate-800" x-text="mode === 'signin' ? 'Welcome back' : 'Create account'"></h2>
-            <p class="text-slate-500 text-sm mt-1" x-text="mode === 'signin' ? 'Enter your credentials to access your account.' : 'Join us by filling out the form below.'"></p>
-        </header>
+        <div class="glass-panel p-1.5 rounded-2xl shadow-lg shadow-indigo-100/50 mb-6 border border-white">
+            <div class="flex relative bg-slate-100/50 rounded-xl p-1">
+                <button @click="mode = 'signin'"
+                    :class="mode === 'signin' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+                    class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-bold text-sm transition-all duration-300">
+                    <i class="ph-bold ph-sign-in"></i> Sign In
+                </button>
+                <button @click="mode = 'signup'"
+                    :class="mode === 'signup' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+                    class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-bold text-sm transition-all duration-300">
+                    <i class="ph-bold ph-user-plus"></i> Sign Up
+                </button>
+            </div>
+        </div>
 
-        <form @submit.prevent="submitForm" class="space-y-5">
-            <div x-show="mode === 'signup'">
-                <label class="block text-sm font-medium text-slate-600 mb-1.5">Full Name</label>
-                <div class="flex items-center gap-3 px-3 w-full border border-slate-200 rounded-lg focus-within:border-indigo-500">
-                    <i class="ph-bold ph-user text-slate-400"></i>
-                    <input type="text" x-model="formData.name" placeholder="Sarah Connor" class="w-full py-2 outline-none bg-transparent">
+        <div
+            class="glass-panel p-8 rounded-[2rem] shadow-2xl shadow-indigo-100/50 border border-white relative overflow-hidden">
+
+            <!-- Loading Overlay -->
+            <div x-show="loading"
+                class="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center"
+                x-transition.opacity>
+                <div class="flex flex-col items-center gap-3">
+                    <div class="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <span class="text-xs font-bold text-indigo-600 uppercase tracking-widest">Processing</span>
                 </div>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-slate-600 mb-1.5">Email</label>
-                <div class="flex items-center gap-3 px-3 w-full border border-slate-200 rounded-lg focus-within:border-indigo-500">
-                    <i class="ph-bold ph-envelope-simple text-slate-400"></i>
-                    <input type="email" x-model="formData.email" required placeholder="name@email.com" class="w-full py-2 outline-none bg-transparent">
+            <template x-if="message">
+                <div :class="isError ? 'bg-red-50 text-red-600 border-red-100' : 'bg-green-50 text-green-600 border-green-100'"
+                    class="mb-6 p-4 rounded-xl text-sm font-medium border flex items-center gap-3 animate-pulse"
+                    x-transition>
+                    <i :class="isError ? 'ph-warning-circle' : 'ph-check-circle'" class="ph-bold text-lg"></i>
+                    <span x-text="message"></span>
                 </div>
-            </div>
+            </template>
 
-            <div>
-                <label class="block text-sm font-medium text-slate-600 mb-1.5">Password</label>
-                <div class="flex items-center gap-3 px-3 w-full border border-slate-200 rounded-lg focus-within:border-indigo-500">
-                    <i class="ph-bold ph-lock-simple text-slate-400"></i>
-                    <input type="password" x-model="formData.password" required placeholder="••••••••" class="w-full py-2 outline-none bg-transparent">
+            <header class="mb-8 text-center">
+                <h2 class="text-2xl font-bold text-slate-900 mb-2"
+                    x-text="mode === 'signin' ? 'Welcome back' : 'Create account'"></h2>
+                <p class="text-slate-500 text-sm"
+                    x-text="mode === 'signin' ? 'Enter your credentials to access your account.' : 'Join us by filling out the form below.'">
+                </p>
+            </header>
+
+            <form @submit.prevent="submitForm" class="space-y-5">
+                <div x-show="mode === 'signup'" x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="opacity-0 -translate-y-4"
+                    x-transition:enter-end="opacity-100 translate-y-0">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Full
+                        Name</label>
+                    <div
+                        class="group flex items-center gap-3 px-4 py-3 w-full bg-slate-50 border-2 border-slate-100 rounded-xl focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-100 transition-all">
+                        <i
+                            class="ph-bold ph-user text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
+                        <input type="text" x-model="formData.name" placeholder="Sarah Connor"
+                            class="w-full outline-none bg-transparent text-slate-900 placeholder:text-slate-300 font-medium">
+                    </div>
                 </div>
-            </div>
 
-            <button type="submit" :disabled="loading" class="w-full py-2.5 bg-indigo-600 text-white rounded-lg font-semibold disabled:opacity-50">
-                <span x-show="!loading" x-text="mode === 'signin' ? 'Sign In' : 'Get Started'"></span>
-                <span x-show="loading">Processing...</span>
-            </button>
-        </form>
-    </div>
-</section>
+                <div>
+                    <label
+                        class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 ml-1">Email</label>
+                    <div
+                        class="group flex items-center gap-3 px-4 py-3 w-full bg-slate-50 border-2 border-slate-100 rounded-xl focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-100 transition-all">
+                        <i
+                            class="ph-bold ph-envelope-simple text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
+                        <input type="email" x-model="formData.email" required placeholder="name@email.com"
+                            class="w-full outline-none bg-transparent text-slate-900 placeholder:text-slate-300 font-medium">
+                    </div>
+                </div>
 
+                <div>
+                    <div class="flex justify-between items-center mb-1.5 ml-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide">Password</label>
+                        <a href="#" class="text-xs font-bold text-indigo-600 hover:text-indigo-700"
+                            x-show="mode === 'signin'">Forgot?</a>
+                    </div>
+                    <div
+                        class="group flex items-center gap-3 px-4 py-3 w-full bg-slate-50 border-2 border-slate-100 rounded-xl focus-within:border-indigo-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-100 transition-all">
+                        <i
+                            class="ph-bold ph-lock-simple text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
+                        <input type="password" x-model="formData.password" required placeholder="••••••••"
+                            class="w-full outline-none bg-transparent text-slate-900 placeholder:text-slate-300 font-medium">
+                    </div>
+                </div>
+
+                <button type="submit" :disabled="loading"
+                    class="w-full py-3.5 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-indigo-300 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:pointer-events-none transition-all duration-200">
+                    <span x-text="mode === 'signin' ? 'Sign In' : 'Get Started'"></span>
+                </button>
+
+                <p class="text-center text-xs text-slate-400 mt-6">
+                    By continuing, you agree to our <a href="#"
+                        class="text-slate-600 hover:text-indigo-600 underline">Terms</a> and <a href="#"
+                        class="text-slate-600 hover:text-indigo-600 underline">Privacy Policy</a>
+                </p>
+            </form>
+        </div>
+    </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
 <script>
-function authForm() {
-    return {
-        mode: 'signin',
-        loading: false,
-        message: '',
-        isError: false,
-        formData: {
-            name: '',
-            email: '',
-            password: ''
-        },
-        async submitForm() {
-            this.loading = true;
-            this.message = '';
+    function authForm() {
+        return {
+            mode: 'signin',
+            loading: false,
+            message: '',
+            isError: false,
+            formData: {
+                name: '',
+                email: '',
+                password: ''
+            },
+            async submitForm() {
+                this.loading = true;
+                this.message = '';
 
-            const endpoint = this.mode === 'signin' ? '/auth/signin' : '/auth/signup';
+                const endpoint = this.mode === 'signin' ? '/auth/signin' : '/auth/signup';
 
-            try {
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(this.formData)
-                });
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(this.formData)
+                    });
 
-                const result = await response.json();
-                this.message = result.message;
-                this.isError = !result.success;
+                    const result = await response.json();
+                    this.message = result.message;
+                    this.isError = !result.success;
 
-                if (result.success) {
-                    // Redirect on success after a short delay
-                    setTimeout(() => window.location.href = '/', 1000);
+                    if (result.success) {
+                        // Redirect on success after a short delay
+                        setTimeout(() => window.location.href = '/dashboard', 1000);
+                    }
+                } catch (err) {
+                    this.isError = true;
+                    this.message = "An error occurred. Please try again.";
+                } finally {
+                    this.loading = false;
                 }
-            } catch (err) {
-                this.isError = true;
-                this.message = "An error occurred. Please try again.";
-            } finally {
-                this.loading = false;
             }
         }
     }
-}
 </script>
 {% endblock %}

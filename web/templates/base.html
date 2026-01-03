@@ -1,28 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}App{% endblock %}</title>
+    <title>{% block title %}Tax Calendar & Compliance 2026{% endblock %}</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src='https://unpkg.com/alpinejs' defer></script>
-    <link rel='stylesheet' type='text/css' href='https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/bold/style.css'/>
+    <link rel='stylesheet' type='text/css'
+        href='https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/bold/style.css' />
+
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
         * {
             font-family: 'Outfit', sans-serif;
         }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
-
+    {% block head %}{% endblock %}
 </head>
-<body class="bg-gray-100 font-sans leading-normal tracking-normal">
 
-    <main class="container mx-auto">
-        {% block content %}{% endblock %}
-    </main>
+<body
+    class="bg-slate-50 text-slate-800 antialiased font-sans selection:bg-indigo-500 selection:text-white relative overflow-x-hidden {% block body_class %}pb-20{% endblock %}">
 
+    <!-- Decorative Background (Shared) -->
+    <div class="fixed inset-0 -z-50 pointer-events-none">
+        <div class="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-indigo-100/50 blur-[100px]">
+        </div>
+        <div class="absolute bottom-[-10%] left-[-5%] w-[600px] h-[600px] rounded-full bg-blue-100/50 blur-[100px]">
+        </div>
+    </div>
+
+    {% block content %}{% endblock %}
+
+    {% block scripts %}{% endblock %}
 </body>
+
 </html>
