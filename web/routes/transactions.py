@@ -51,20 +51,32 @@ def scan_bill(user):
     try:
         # 3. Trigger Gemini pipeline with the ABSOLUTE path
         extracted_data = ocr_tool.extract_data(absolute_filepath)
+        raw_date = extracted_data.get('invoice_date', '')
+        formatted_date = ""
+        if raw_date:
+            try:
+                # Try to parse the specific format Gemini returned: 28/8/19
+                parsed_date = datetime.strptime(raw_date, "%d/%m/%y")
+                # Convert it to the HTML required format: 2019-08-28
+                formatted_date = parsed_date.strftime("%Y-%m-%d")
+            except ValueError:
+                # Fallback to current date if parsing fails
+                formatted_date = datetime.now().strftime('%Y-%m-%d')
+        else:
+            formatted_date = datetime.now().strftime('%Y-%m-%d')
 
         # 4. Map data for the Review Form (add_transaction.html)
         formatted_data = {
             "merchant": extracted_data.get('vendor_name'),
             "amount": extracted_data.get('total_amount'),
-            "date": extracted_data.get('invoice_date'),
+            "date": formatted_date,
             "gstin": extracted_data.get('gstin'),
             "invoice_no": extracted_data.get('invoice_number'),
             "file_url": f"uploads/{unique_filename}" 
         }
 
         # Fallback date if AI fails to find one
-        if not formatted_data['date']:
-            formatted_data['date'] = datetime.now().strftime('%Y-%m-%d')
+        
 
         # 5. RENDER REVIEW FORM - Do not redirect yet!
         # This allows the user to click "Save" which triggers transactions.save_transaction
