@@ -25,7 +25,10 @@ def token_required(f):
             response.set_cookie('auth_token', '', expires=0)
             return response
 
-        return f(user, *args, **kwargs)
+        if user['profile'] == 0 and request.endpoint != 'dashboard.profile':
+            return redirect(url_for('dashboard.profile'))
+
+        return f(dict(user), *args, **kwargs)
     return decorated
 
 

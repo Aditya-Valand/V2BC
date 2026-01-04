@@ -3,7 +3,10 @@
 {% block title %}Business Setup - BharatCompliance{% endblock %}
 
 {% block content %}
-<section class="flex flex-col items-center py-12 px-6 min-h-screen relative overflow-hidden"
+
+{% include 'navbar.html' %}
+
+<section class="flex flex-col items-center pt-8 pb-8 px-6 relative overflow-hidden"
     x-data="multiStepOnboarding()">
 
     <!-- Header/Progress Section -->

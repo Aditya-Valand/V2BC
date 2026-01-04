@@ -1,0 +1,42 @@
+<nav class="sticky top-4 z-50 w-[95%] max-w-7xl mx-auto rounded-2xl glass-panel shadow-lg shadow-indigo-100/20 border border-white/50 mb-8 fade-in-up">
+    <div class="px-6 h-16 flex justify-between items-center">
+        <div class="flex items-center gap-8">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                    <i class="ph-bold ph-shield-check text-lg"></i>
+                </div>
+                <span class="text-lg font-bold text-slate-900 tracking-tight">BharatCompliance</span>
+            </div>
+
+            <div class="hidden md:flex items-center gap-1">
+                <a href="{{ url_for('dashboard.dashboard') }}" class="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-sm font-bold border border-indigo-100">Dashboard</a>
+                <a href="{{ url_for('transactions.list_transactions') }}" class="px-4 py-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-50 rounded-xl text-sm font-medium transition-all">Records</a>
+                <a href="#" class="px-4 py-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-50 rounded-xl text-sm font-medium transition-all">Loans</a>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <button class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all relative">
+                <i class="ph-bold ph-bell text-xl"></i>
+                <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+            </button>
+            <div class="h-8 w-[1px] bg-slate-200 mx-1"></div>
+            <div class="flex items-center gap-3 pl-1 cursor-pointer group">
+                <div class="text-right hidden sm:block">
+                    <p class="text-sm font-bold text-slate-900 leading-none group-hover:text-indigo-600 transition">
+                        {{ user.name }}
+                    </p>
+                    <p class="text-xs text-slate-400 mt-1">{{ user.business_type or 'General' }}</p>
+                </div>
+                <div @click="window.location.href='/profile'" class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white font-bold shadow-md shadow-indigo-200 group-hover:shadow-lg group-hover:scale-105 transition-all uppercase">
+                    {{ user.name[0] }}
+                </div>
+                <form method="POST" action="{{ url_for('auth.signout') }}">
+                    <button type="submit" class="text-slate-400 hover:text-red-600 transition-colors">
+                        <i class="ph-bold ph-power text-xl"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</nav>

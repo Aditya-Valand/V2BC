@@ -20,11 +20,6 @@ def get_business_key(db_type):
 @dashboard_bp.route('/dashboard', methods=['GET'])
 @token_required
 def dashboard(user):
-    raw_user = get_full_user_profile(user['email'])
-    if not raw_user:
-        return redirect(url_for('auth.login'))
-
-    user = dict(raw_user)
 
     conn = get_db_connection()
     tx_rows = conn.execute('SELECT * FROM transactions WHERE user_id = ?', (user['id'],)).fetchall()
@@ -34,13 +29,13 @@ def dashboard(user):
 
     # Get Engine Keys
     biz_key = get_business_key(user.get('business_type'))
-    turnover = user.get('annual_turnover', 0)
+    turnover = int(user.get('annual_turnover', 0))
     salary_txs = [tx for tx in tx_rows if tx['category'] == 'Salary']
     total_salary_paid = sum(tx['amount'] for tx in salary_txs)
 
 # 2. Calculate average daily wage
 # Assuming a standard 26-day work month for the employees_count
-    emp_count = user.get('employees_count', 1)
+    emp_count = int(user.get('employees_count', 1))
     avg_daily_wage = 0
     if emp_count > 0 and total_salary_paid > 0:
         avg_daily_wage = total_salary_paid / (emp_count * 26)
@@ -83,7 +78,7 @@ def dashboard(user):
         "labour": labour_data,
     }
 
-    return render_template('dashboard.html', user=dashboard_data)
+    return render_template('dashboard.html', data=dashboard_data, user=user)
 
 
 @dashboard_bp.route('/profile', methods=['GET', 'POST'])
@@ -116,7 +111,8 @@ def profile(user):
 
     # GET request: Fetch existing data to pre-fill the form (optional)
     existing_profile = get_business_profile(user['id'])
-    return render_template('profile.html', existing_profile=existing_profile)
+    print("Existing Profile:", existing_profile)
+    return render_template('profile.html', existing_profile=existing_profile, user=user)
 
 
 @dashboard_bp.route('/profile-json', methods=['GET'])

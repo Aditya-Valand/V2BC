@@ -15,7 +15,7 @@ def init_db():
     conn.execute(users_table())
     conn.execute(profiles_table())
     conn.execute(transactions_table())
-    seed_demo_data()
+    # seed_demo_data()
     conn.commit()
     conn.close()
 
@@ -89,7 +89,7 @@ def seed_demo_data():
         INSERT INTO users (name, email, password, profile)
         VALUES (?, ?, ?, ?)
     ''', ("Sarah Connor", "a7952534@gmail.com", hashed_pw, 1))
-    
+
     user_id = cursor.lastrowid
 
     # 3. Create a High-Compliance Business Profile
@@ -107,7 +107,7 @@ def seed_demo_data():
         user_id, 'Services', 'Sole Proprietorship', 'Connor Cafe & Tech',
         '2024-01-01', 2, 'Maharashtra', 'Mumbai',
         'Omnichannel', 2400000, 'Business',
-        'Daily', 'None', 1, 
+        'Daily', 'None', 1,
         1, 1, 1, 1, 1
     ))
 
