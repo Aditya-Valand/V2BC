@@ -11,6 +11,27 @@ BharatCompliance Master Rule Engine (v2026.FINAL)
 Integrated Mapping: Micro-biz, Traders, Freelancers, and Gig Workers.
 """
 
+LINK_MAP = {
+    # General Compliance
+    'gst_reg': "https://reg.gst.gov.in/registration/",
+    'gst_login': "https://services.gst.gov.in/services/login",
+    'itr': "https://www.incometax.gov.in/iec/foportal/help/e-filing-itr4-form-sugam-faq",
+
+    # Sector Specific
+    'eshram': "https://eshram.gov.in/",
+    'pmjay': "https://nha.gov.in/PM-JAY",
+
+    # Licenses (Mapped by the keys you use in BUSINESS_LICENSES)
+    'fssai_basic': "https://foscos.fssai.gov.in/",
+    'fssai_state': "https://foscos.fssai.gov.in/",
+    'shop_act': "https://www.nsws.gov.in/",
+    'trade_license': "https://www.nsws.gov.in/",
+    'udyam_registration': "https://udyamregistration.gov.in/",
+    'pm_svanidhi_id': "https://pmsvanidhi.mohua.gov.in/",
+    'e_shram_uan': "https://eshram.gov.in/",
+    'pollution_noc': "https://cpcb.nic.in/"
+}
+
 BUSINESS_LICENSES = {
     'fssai_basic': {
         'label': 'FSSAI Basic License',
@@ -229,7 +250,7 @@ class ComplianceResult:
     status: str
     message: str
     color: str
-    checklist: List[str]
+    checklist: List[Dict[str, str]] # Changed to list of dicts: {message, link}
     loan_eligible: bool
     score: int        # Add this
     penalty: float
@@ -239,49 +260,81 @@ class ComplianceEngine:
     def validate_business(biz_key: str, turnover: float, state: str = "General") -> ComplianceResult:
         biz = BUSINESS_MAP.get(biz_key)
 
-        # Initializing checklist early to avoid UnboundLocalError
         checklist = []
 
         if not biz or turnover < 0:
             return ComplianceResult("Invalid Input", "Enter valid business data.", "gray", [], False, 0, 0.0)
 
-        # 2026 Special State Logic (Northeast/Hills)
+        # 2026 Special State Logic
         special_states = ["Manipur", "Mizoram", "Nagaland", "Tripura", "Arunachal", "Meghalaya", "Sikkim", "Puducherry"]
         threshold = 1000000 if state in special_states and biz['sector'] in ['Service', 'Gig Economy'] else biz['threshold']
 
         is_above = turnover > threshold
-        checklist.append(f"Limit Status: {'Crossed' if is_above else 'Within safe limit'}")
 
-        # Business Logic Updates
+        # 1. Limit Status Link
+        checklist.append({
+            "message": f"Limit Status: {'Crossed' if is_above else 'Within safe limit'}",
+            "link": LINK_MAP['gst_login'] if is_above else LINK_MAP['gst_reg']
+        })
+
+        # 2. Gig Economy Logic
         if biz.get('sector') == 'Gig Economy':
-            checklist.append(f"Aggregator must contribute {biz['welfare_fund_rate']*100}% to Welfare Fund.")
-            checklist.append("Port your benefits via Aadhaar-linked e-Shram ID.")
-            checklist.append("Sync e-Shram ID for free health cover (AB-PMJAY).")
+            checklist.append({
+                "message": f"Aggregator must contribute {biz['welfare_fund_rate']*100:.0f}% to Welfare Fund.",
+                "link": LINK_MAP['eshram']
+            })
+            checklist.append({
+                "message": "Port your benefits via Aadhaar-linked e-Shram ID.",
+                "link": LINK_MAP['eshram']
+            })
+            checklist.append({
+                "message": "Sync e-Shram ID for free health cover (AB-PMJAY).",
+                "link": LINK_MAP['pmjay']
+            })
 
+        # 3. Food Biz Logic
         if biz.get('is_food_biz'):
             fssai_tier = "Basic (₹100)" if turnover <= 1200000 else "State (₹2000+)"
-            checklist.append(f"Required License: FSSAI {fssai_tier}")
+            checklist.append({
+                "message": f"Required License: FSSAI {fssai_tier}",
+                "link": LINK_MAP['fssai_basic']
+            })
 
+        # 4. GST Logic
         if is_above:
-            checklist.extend(["Register for GST immediately", "Issue GST Invoices"])
+            checklist.extend([
+                {"message": "Register for GST immediately", "link": LINK_MAP['gst_reg']},
+                {"message": "Issue GST Invoices", "link": LINK_MAP['gst_login']}
+            ])
         else:
-            checklist.append(f"Stay below ₹{threshold/100000}L to remain GST-Exempt.")
+            checklist.append({
+                "message": f"Stay below ₹{threshold/100000}L to remain GST-Exempt.",
+                "link": LINK_MAP['gst_reg']
+            })
 
+        # 5. Freelance Logic
         if biz['sector'] == 'Freelance Professional':
-            checklist.append("Use ITR-4 Sugam for 50% presumptive profit claim.")
+            checklist.append({
+                "message": "Use ITR-4 Sugam for 50% presumptive profit claim.",
+                "link": LINK_MAP['itr']
+            })
 
+        # 6. License Loop (Uses external LINK_MAP to find URL)
         for lic in biz['licenses']:
-            checklist.append(f"Renew/Obtain: {lic}")
+            # We assume lic (the key) exists in LINK_MAP. If not, default to #
+            url = LINK_MAP.get(lic, "#")
+            checklist.append({
+                "message": f"Renew/Obtain: {BUSINESS_LICENSES[lic]['label']}",
+                "link": url
+            })
 
-        # Calculate score (0-100) based on how much of the threshold is used
+        # Calculation Logic
         if threshold > 0:
             usage_ratio = turnover / threshold
-            # Score stays high if under limit, drops to 60 if over limit
             calc_score = int(max(0, (1 - usage_ratio) * 100)) if not is_above else 60
         else:
             calc_score = 100
 
-        # Estimated penalty if above threshold (Standard 18% GST estimate)
         calc_penalty = round((turnover - threshold) * 0.18, 2) if is_above else 0.0
 
         return ComplianceResult(
@@ -293,7 +346,6 @@ class ComplianceEngine:
             score=min(calc_score, 100),
             penalty=calc_penalty
         )
-
 
 class LoanEligibilityEngine:
     @staticmethod

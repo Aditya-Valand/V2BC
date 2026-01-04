@@ -81,7 +81,7 @@
                 </div>
             </div>
 
-<div x-data="invoiceUpload()" class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-indigo-500/5 transition-all duration-500 max-w-sm">
+<div x-data="invoiceUpload()" class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-indigo-100/50 hover:shadow-indigo-500/5 transition-all duration-500 max-w-sm">
     <div class="relative z-10">
 
         <div class="flex justify-between items-start mb-12">
@@ -94,13 +94,6 @@
             </div>
         </div>
 
-        <div class="mb-10 text-center">
-            <div class="flex items-baseline justify-center gap-1">
-                <span x-ref="scoreDisplay" id="score-val" class="text-7xl font-light tracking-tighter text-slate-900">85</span>
-                <span class="text-sm text-slate-300 font-bold tracking-widest uppercase">/100</span>
-            </div>
-        </div>
-
         <div class="space-y-4 mb-10">
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Required for GST Help:</p>
             <div id="doc-list" class="space-y-3">
@@ -109,7 +102,13 @@
                     <i class="ph-bold ph-receipt text-indigo-500"></i>
                     <span class="text-xs font-semibold text-slate-600">GST Invoices (Latest)</span>
                 </div>
+                <div class="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-2xl border border-slate-100/50 transition-colors"
+                    id="gst-item">
+                    <i class="ph-bold ph-receipt text-indigo-500"></i>
+                    <span class="text-xs font-semibold text-slate-600">Tax Audit Documents (Latest)</span>
+                </div>
             </div>
+
         </div>
 
         <input type="file"
@@ -119,6 +118,7 @@
                accept="image/*,application/pdf"
                @change="handleMinimalUpload($el)" />
 
+            <p class="text-xs text-slate-500 mb-4">Only PDF and image files are allowed.</p>
         <button id="action-btn"
                 x-ref="uploadBtn"
                 @click="$refs.fileInput.click()"
@@ -151,15 +151,15 @@
 
                 <div>
                     <h4 class="text-sm font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">
-                        {{ action }}
+                        {{ action.message }}
                     </h4>
                     <p class="text-xs text-slate-500 font-medium">Compliance Requirement 2026</p>
                 </div>
             </div>
 
-            <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+            <a href="{{ action.link }}" target="_blank" class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
                 <i class="ph-bold ph-caret-right text-slate-300 group-hover:text-indigo-600"></i>
-            </div>
+            </a>
         </div>
         {% endfor %}
     </div>

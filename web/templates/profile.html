@@ -281,6 +281,13 @@ function multiStepOnboarding() {
             this.loading = true;
             try {
 
+                // if step is not 4, do not submit instead increase step
+                if (this.step < 4) {
+                    this.step++;
+                    this.loading = false;
+                    return;
+                }
+
                 this.formData.commencement_date = this.formData.commencement_date || new Date().toISOString().split('T')[0];
                 this.formData.nature_of_income = this.formData.mode_of_sales;
 
