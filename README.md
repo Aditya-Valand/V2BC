@@ -1,6 +1,12 @@
 # GFGBQ-Team-teamzero
 Repository for teamzero - Vibe Coding Hackathon
 
+PROBLEM STATEMENT : PS 15 : Real-Time Tax & Compliance Copilot for Micro-Businesses
+PROJECT NAME      : BharatCompliance
+TEAM NAME         : TEAM ZERO
+DEPLOYED LINK     :
+VIDEO LINK        :
+
 # App
 Activate virtual enviornment before installing required packages.
 
