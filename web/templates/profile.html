@@ -281,8 +281,11 @@ function multiStepOnboarding() {
             try {
 
                 this.formData.commencement_date = this.formData.commencement_date || new Date().toISOString().split('T')[0];
-                this.formData.employees_count = parseInt(this.formData.employees_count) || 0;
                 this.formData.nature_of_income = this.formData.mode_of_sales;
+
+                // Parse Int Numeric Value or 0
+                this.formData.annual_turnover = parseInt(this.formData.annual_turnover) || 0;
+                this.formData.existing_loans = parseInt(this.formData.existing_loans) || 0;
 
                 const response = await fetch('/profile', {
                     method: 'POST',
