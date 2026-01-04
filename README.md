@@ -81,13 +81,14 @@ Unlike standard accounting software, our solution uses **Gemini Vision AI** to a
 ## Relevant Screenshots
 
 ### 1. Dashboard & Compliance Health
-*(Place screenshot here showing the score gauge and turnover stats)*
+![Dashboard Screenshot](images/dashboard.png)
 
 ### 2. AI Document Scanner
-*(Place screenshot here showing the file upload and extracted data)*
+![Tax Calendar Screenshot](images/tax-calendar.png)
 
 ### 3. Tax Calendar & License Status
-*(Place screenshot here showing the Advance Tax table and License Accordion)*
+![Records Screenshot](images/records.png)
+
 
 ---
 
