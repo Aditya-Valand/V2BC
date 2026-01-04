@@ -2,7 +2,7 @@
 ### PROJECT NAME      : BharatCompliance
 ### TEAM NAME         : TEAM ZERO
 ### DEPLOYED LINK     : [Website Demo](https://bharatcomplianceb.onrender.com)
-### VIDEO LINK        : [Insert Link Here]
+### VIDEO LINK        : [View Video Demo](https://drive.google.com/file/d/1CNA7ajHe0tKdvjut7An-Vagp9i-yz9le/view)
 ### PPT LINK          : [Presentation PPTX](https://docs.google.com/presentation/d/1KDWhQYRk_OeN82xKNREEAgIfyb_jCLLw/edit?usp=sharing&ouid=105976556751002261039&rtpof=true&sd=true)
 
 ---
@@ -56,7 +56,7 @@ Unlike standard accounting software, our solution uses **Gemini Vision AI** to a
 4.  **Environment Variables**
     Create a `.env` file in the root directory:
     ```env
-    GOOGLE_API_KEY=your_gemini_api_key_here
+    GEMINI_API_KEY=your_gemini_api_key_here
     SECRET_KEY=your_random_secret_key
     ```
 
