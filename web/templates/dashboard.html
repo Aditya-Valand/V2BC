@@ -17,14 +17,6 @@
     <i class="ph-bold ph-calendar-check text-slate-400 group-hover:text-indigo-600 transition-colors"></i>
     Tax Calendar
 </a>
-            <form action="{{ url_for('transactions.scan_bill') }}" method="POST" enctype="multipart/form-data">
-                <input type="file" name="bill_image" id="bill_upload" class="hidden" onchange="this.form.submit()">
-                <button type="button" onclick="document.getElementById('bill_upload').click()"
-                    class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200 hover:-translate-y-0.5 transition-all">
-                    <i class="ph-bold ph-plus"></i>
-                    Add Record
-                </button>
-            </form>
         </div>
     </header>
 
@@ -89,31 +81,52 @@
                 </div>
             </div>
 
-            <div class="bg-slate-900 p-8 rounded-[2rem] shadow-xl shadow-slate-900/20 text-white flex flex-col justify-between relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
-                <div class="relative z-10">
-                    <div class="flex justify-between items-center mb-8">
-                        <p class="text-xs font-bold text-indigo-400 uppercase tracking-widest">Loan Power</p>
-                        <div class="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center border border-slate-700">
-                            <i class="ph-bold ph-chart-line-up text-emerald-400 text-xl"></i>
-                        </div>
-                    </div>
-                    <div class="flex items-baseline gap-2 mb-4">
-                        <span class="text-5xl font-bold tracking-tight">{{ data.credit.score }}</span>
-                        <span class="text-lg text-slate-500 font-medium">/100</span>
-                    </div>
-                    <div class="w-full bg-slate-800/50 h-2 rounded-full mb-8 backdrop-blur-sm border border-slate-700/50">
-                        <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)] relative overflow-hidden"
-                            style="width: {{ data.credit.score }}%">
-                            <div class="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
-                        </div>
-                    </div>
-                    <button class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-lg shadow-indigo-900/50 border border-indigo-500/50">
-                        Improve Eligibility
-                    </button>
-                </div>
-                <div class="absolute -top-24 -right-24 w-64 h-64 bg-indigo-600/20 rounded-full blur-[60px] group-hover:bg-indigo-600/30 transition-colors"></div>
-                <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-600/20 rounded-full blur-[60px] group-hover:bg-purple-600/30 transition-colors"></div>
+<div x-data="invoiceUpload()" class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-indigo-500/5 transition-all duration-500 max-w-sm">
+    <div class="relative z-10">
+
+        <div class="flex justify-between items-start mb-12">
+            <div class="space-y-1">
+                <h3 class="text-slate-900 font-bold text-xl tracking-tight">Finance Health</h3>
+                <p class="text-[11px] text-indigo-500 font-bold uppercase tracking-[0.2em]">Government Verification</p>
             </div>
+            <div class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100">
+                <i class="ph-bold ph-seal-check text-slate-400 text-xl"></i>
+            </div>
+        </div>
+
+        <div class="mb-10 text-center">
+            <div class="flex items-baseline justify-center gap-1">
+                <span x-ref="scoreDisplay" id="score-val" class="text-7xl font-light tracking-tighter text-slate-900">85</span>
+                <span class="text-sm text-slate-300 font-bold tracking-widest uppercase">/100</span>
+            </div>
+        </div>
+
+        <div class="space-y-4 mb-10">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Required for GST Help:</p>
+            <div id="doc-list" class="space-y-3">
+                <div class="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-2xl border border-slate-100/50 transition-colors"
+                    id="gst-item">
+                    <i class="ph-bold ph-receipt text-indigo-500"></i>
+                    <span class="text-xs font-semibold text-slate-600">GST Invoices (Latest)</span>
+                </div>
+            </div>
+        </div>
+
+        <input type="file"
+               x-ref="fileInput"
+               id="finance-upload"
+               class="hidden"
+               accept="image/*,application/pdf"
+               @change="handleMinimalUpload($el)" />
+
+        <button id="action-btn"
+                x-ref="uploadBtn"
+                @click="$refs.fileInput.click()"
+                class="w-full py-4 bg-slate-900 hover:bg-indigo-600 text-white rounded-2xl text-[11px] font-bold tracking-[0.15em] uppercase transition-all active:scale-[0.97] shadow-xl shadow-slate-200 disabled:opacity-70 disabled:cursor-not-allowed">
+            Upload Documents
+        </button>
+    </div>
+</div>
         </div>
     </div>
 
@@ -197,4 +210,70 @@
         </section>
     </div>
 </main>
+
+<script>
+    function invoiceUpload() {
+        return {
+            async handleMinimalUpload(input) {
+                if (!input.files || input.files.length === 0) return;
+
+                const btn = this.$refs.uploadBtn;
+                const originalText = 'Upload Documents';
+
+                btn.innerHTML = '<span class="animate-pulse">Analyzing & Uploading...</span>';
+                btn.disabled = true;
+
+                const formData = new FormData();
+
+                Array.from(input.files).forEach((file, index) => {
+                    formData.append('bill_image', file);
+                });
+
+                try {
+                    // Inside your handleMinimalUpload function...
+
+                    const response = await fetch('/scan', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    // Check the Content-Type header to decide how to handle the response
+                    const contentType = response.headers.get("content-type");
+
+                    if (contentType && contentType.includes("application/json")) {
+                        // IT IS AN ERROR (JSON)
+                        const result = await response.json();
+                        Alpine.store('notifications').push(result.message, 'error');
+
+                        // Reset UI
+                        btn.innerText = "Try Again";
+                        btn.disabled = false;
+
+                    } else {
+                        // IT IS SUCCESS (HTML)
+                        // Since we got HTML back, we usually replace the whole document
+                        // or redirect manually if the backend didn't do a full page load.
+
+                        const html = await response.text();
+                        document.open();
+                        document.write(html);
+                        document.close();
+                    }
+
+                } catch (err) {
+                    console.error(err);
+                    Alpine.store('notifications').push(err.message || "Unable to upload documents.", "error");
+
+                    btn.innerText = "TRY AGAIN";
+                    setTimeout(() => {
+                         btn.innerText = originalText;
+                         btn.disabled = false;
+                    }, 2000);
+                } finally {
+                    input.value = '';
+                }
+            }
+        }
+    }
+</script>
 {% endblock %}

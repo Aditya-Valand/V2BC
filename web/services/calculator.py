@@ -7,8 +7,8 @@ class BusinessCalculator:
     def calculate_presumptive_tax(turnover):
         # 2026 Presumptive Tax for Services (50% of turnover is profit, taxed at ~10% avg)
         # This gives us the ₹12,450 from your Sarah Connor seed data
-        total_tax = (turnover * 0.5) * 0.010375 
-        
+        total_tax = (turnover * 0.5) * 0.010375
+
         return {
             "estimated_tax": round(total_tax, 2),
             "deadline": "March 15, 2026",
@@ -23,7 +23,7 @@ class BusinessCalculator:
     def get_advance_tax_schedule(total_tax: float):
         """Standard 2025-26 Installments"""
         if total_tax < 10000: return [] # No advance tax if liability < 10k
-        
+
         return [
             {"deadline": "15 June", "percentage": "15%", "amount": total_tax * 0.15},
             {"deadline": "15 Sept", "percentage": "45%", "amount": total_tax * 0.45},

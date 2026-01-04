@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, request, jsonify
 from database.user import get_user_by_email, save_business_profile, get_business_profile, user_profile_status_update,get_full_user_profile
 from database.config import get_db_connection # Import your connection helper
-from services.rule_engine import ComplianceEngine
+from services.rule_engine import ComplianceEngine, BUSINESS_MAP
 from services.calculator import BusinessCalculator
 from services.rule_engine import LoanEligibilityEngine
 from middlewares import token_required
@@ -10,12 +10,7 @@ dashboard_bp = Blueprint('dashboard', __name__)
 
 def get_business_key(db_type):
     """Maps database strings to Rule Engine keys."""
-    mapping = {
-        'Services': 'web_developer',  # Defaulting Sarah Connor to a Tech Service
-        'Food': 'tea_shop',
-        'Retail': 'kirana_store'
-    }
-    return mapping.get(db_type, 'web_developer')
+    return BUSINESS_MAP.get(db_type, 'web_developer')
 
 @dashboard_bp.route('/dashboard', methods=['GET'])
 @token_required
@@ -33,8 +28,8 @@ def dashboard(user):
     salary_txs = [tx for tx in tx_rows if tx['category'] == 'Salary']
     total_salary_paid = sum(tx['amount'] for tx in salary_txs)
 
-# 2. Calculate average daily wage
-# Assuming a standard 26-day work month for the employees_count
+    # 2. Calculate average daily wage
+    # Assuming a standard 26-day work month for the employees_count
     emp_count = int(user.get('employees_count', 1))
     avg_daily_wage = 0
     if emp_count > 0 and total_salary_paid > 0:
@@ -110,9 +105,10 @@ def profile(user):
             return jsonify({"success": False, "message": str(e)}), 500
 
     # GET request: Fetch existing data to pre-fill the form (optional)
+
+    business_name_list = {k: v['label'] for k,v in BUSINESS_MAP.items()}
     existing_profile = get_business_profile(user['id'])
-    print("Existing Profile:", existing_profile)
-    return render_template('profile.html', existing_profile=existing_profile, user=user)
+    return render_template('profile.html', existing_profile=existing_profile, user=user, business_name_list=business_name_list)
 
 
 @dashboard_bp.route('/profile-json', methods=['GET'])

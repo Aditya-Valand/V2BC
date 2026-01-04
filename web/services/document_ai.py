@@ -3,7 +3,6 @@ from google.genai import types
 import json
 import os
 
-
 class DocumentAI:
     def __init__(self, api_key: str | None = None):
         # Just store the key, don't use it yet

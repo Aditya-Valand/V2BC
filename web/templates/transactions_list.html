@@ -3,23 +3,15 @@
 {% block title %}Transaction Ledger - BharatCompliance{% endblock %}
 
 {% block content %}
-<main class="container mx-auto px-4 max-w-6xl py-12 relative">
+
+{% include 'navbar.html' %}
+
+<main class="mx-auto px-4 max-w-7xl py-8 relative">
 
     <div class="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6 fade-in-up">
         <div>
             <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Business Ledger</h1>
             <p class="text-slate-500 mt-1 font-medium">History of all scanned bills and manual entries.</p>
-        </div>
-        <div class="flex items-center gap-4">
-            <form action="{{ url_for('transactions.scan_bill') }}" method="POST" enctype="multipart/form-data" class="flex items-center" id="scan-form">
-                <label
-                    class="flex items-center gap-3 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-indigo-300 hover:-translate-y-0.5 transition-all cursor-pointer active:scale-95 active:translate-y-0 group">
-                    <i class="ph-bold ph-scan text-xl group-hover:scale-110 transition-transform"></i>
-                    <span>Scan New Bill</span>
-                    <input type="file" name="bill_image" accept="image/*" capture="camera" class="hidden"
-                        onchange="document.getElementById('scan-form').submit()">
-                </label>
-            </form>
         </div>
     </div>
 
@@ -32,7 +24,7 @@
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Volume</p>
             </div>
             <h3 class="text-3xl font-bold text-slate-800 ml-1">
-                {{ transactions|length }} 
+                {{ transactions|length }}
                 <span class="text-lg text-slate-400 font-medium">Records</span>
             </h3>
         </div>

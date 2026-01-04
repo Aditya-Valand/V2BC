@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from database.user import get_user_by_email
 from database.user import get_full_user_profile
 from database.config import get_db_connection
-from services.rule_engine import ComplianceEngine
+from services.rule_engine import BUSINESS_MAP, BUSINESS_LICENSES, ComplianceEngine
 from services.calculator import BusinessCalculator
 from middlewares import token_required
 import os
@@ -31,9 +31,9 @@ def check_wages(user):
     wage_status = BusinessCalculator.check_floor_wage_compliance(daily_wage, user['state'])
 
     if not wage_status['is_compliant']:
-        flash(f"⚠️ Warning: Wage is below statutory limit (₹{wage_status['required']}). Gap: ₹{wage_status['gap']}", "danger")
+        flash(f"Warning: Wage is below statutory limit (₹{wage_status['required']}). Gap: ₹{wage_status['gap']}", "danger")
     else:
-        flash("✅ Your business is compliant with 2026 Labour Codes.", "success")
+        flash("Your business is compliant with 2026 Labour Codes.", "success")
 
     return redirect(url_for('dashboard.dashboard'))
 
@@ -80,9 +80,9 @@ def tax_calendar(user):
     raw_user = get_full_user_profile(user['email'])
     if not raw_user:
         return redirect(url_for('auth.login'))
-    
+
     user_dict = dict(raw_user)
-    
+
     # 2. Gather necessary transactional data for Wage Compliance
     conn = get_db_connection()
     tx_rows = conn.execute('SELECT * FROM transactions WHERE user_id = ?', (user_dict['id'],)).fetchall()
@@ -94,7 +94,7 @@ def tax_calendar(user):
     # 3. Calculate Labour Data
     emp_count = user_dict.get('employees_count', 1)
     avg_daily_wage = total_salary_paid / (emp_count * 26) if emp_count > 0 and total_salary_paid > 0 else 0
-    
+
     labour_data = {
         "current_wage": round(avg_daily_wage, 2),
         "min_required": 190, # 2026 Floor Wage
@@ -104,11 +104,11 @@ def tax_calendar(user):
     # 4. Generate the Advance Tax Schedule
     tax_analysis = BusinessCalculator.calculate_presumptive_tax(user_dict.get('annual_turnover', 0))
 
-    # 5. Package everything into the 'user' variable expected by the template
-    dashboard_data = {
+    data = {
         "profile": user_dict,
         "labour": labour_data,
-        "tax": tax_analysis
+        "tax": tax_analysis,
+        "licenses": [BUSINESS_LICENSES.get(l) for l in BUSINESS_MAP.get(user_dict.get('business_type'))['licenses']],
     }
 
-    return render_template('tax_calendar.html', user=dashboard_data)
+    return render_template('tax_calendar.html', data=data, user=user)

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
 import os
 from werkzeug.utils import secure_filename
 from datetime import datetime
@@ -23,69 +23,69 @@ if not os.path.exists(UPLOAD_FOLDER):
 def list_transactions(user):
     """Shows history of all scanned bills using the joined user ID."""
     records = get_transactions_by_user(user['id'])
-    return render_template('transactions_list.html', transactions=records)
+    return render_template('transactions_list.html', transactions=records, user=user)
 
 @transactions_bp.route('/scan', methods=['POST'])
 @token_required
 def scan_bill(user):
     """Step 1: Receive image and run Gemini Vision OCR."""
-    if 'bill_image' not in request.files:
-        flash("No file detected. Please capture or upload a bill.", "warning")
-        return redirect(url_for('dashboard.dashboard'))
-
-    file = request.files['bill_image']
-    if file.filename == '':
-        return redirect(url_for('dashboard.dashboard'))
-
-    # 1. Setup Absolute Path for Saving
-    upload_base = os.path.join(current_app.root_path, 'static', 'uploads')
-    if not os.path.exists(upload_base):
-        os.makedirs(upload_base)
-
-    # 2. Secure and Save the File
-    filename = secure_filename(file.filename)
-    unique_filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{filename}"
-    absolute_filepath = os.path.join(upload_base, unique_filename)
-    file.save(absolute_filepath)
-
     try:
-        # 3. Trigger Gemini pipeline with the ABSOLUTE path
+        # 1. VALIDATION: Check file existence
+        if 'bill_image' not in request.files:
+            return jsonify({"success": False, "message": "No file detected"}), 400
+
+        file = request.files['bill_image']
+
+        # 2. VALIDATION: Check filename
+        if file.filename == '':
+            return jsonify({"success": False, "message": "No file selected"}), 400
+
+        # 3. Secure and Save
+        upload_base = os.path.join(current_app.root_path, 'static', 'uploads')
+        if not os.path.exists(upload_base):
+            os.makedirs(upload_base)
+
+        filename = secure_filename(file.filename)
+        # Use timestamp to prevent filename collisions
+        unique_filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{filename}"
+        absolute_filepath = os.path.join(upload_base, unique_filename)
+        file.save(absolute_filepath)
+
+        # 4. Trigger Gemini OCR
+        # We assume ocr_tool handles its own internal errors, but we wrap in try/except just in case
         extracted_data = ocr_tool.extract_data(absolute_filepath)
+
+        # 5. Date Parsing Logic
         raw_date = extracted_data.get('invoice_date', '')
-        formatted_date = ""
+        formatted_date = datetime.now().strftime('%Y-%m-%d') # Default fallback
+
         if raw_date:
             try:
-                # Try to parse the specific format Gemini returned: 28/8/19
+                # Attempt to parse DD/MM/YY format common in invoices
                 parsed_date = datetime.strptime(raw_date, "%d/%m/%y")
-                # Convert it to the HTML required format: 2019-08-28
                 formatted_date = parsed_date.strftime("%Y-%m-%d")
             except ValueError:
-                # Fallback to current date if parsing fails
-                formatted_date = datetime.now().strftime('%Y-%m-%d')
-        else:
-            formatted_date = datetime.now().strftime('%Y-%m-%d')
+                # Keep default if parsing fails
+                pass
 
-        # 4. Map data for the Review Form (add_transaction.html)
+        # 6. Prepare Data for the Form
         formatted_data = {
-            "merchant": extracted_data.get('vendor_name'),
-            "amount": extracted_data.get('total_amount'),
+            "merchant": extracted_data.get('vendor_name', ''),
+            "amount": extracted_data.get('total_amount', 0),
             "date": formatted_date,
-            "gstin": extracted_data.get('gstin'),
-            "invoice_no": extracted_data.get('invoice_number'),
-            "file_url": f"uploads/{unique_filename}" 
+            "gstin": extracted_data.get('gstin', ''),
+            "invoice_no": extracted_data.get('invoice_number', ''),
+            "file_url": f"uploads/{unique_filename}"
         }
 
-        # Fallback date if AI fails to find one
-        
-
-        # 5. RENDER REVIEW FORM - Do not redirect yet!
-        # This allows the user to click "Save" which triggers transactions.save_transaction
-        return render_template('add_transaction.html', data=formatted_data)
+        # 7. SUCCESS: Render the Template (HTML)
+        # This "redirects" the user to the review page with data pre-filled
+        return render_template('add_transaction.html', data=formatted_data, user=user)
 
     except Exception as e:
-        # If AI fails, we still have the file saved, but we return to dashboard
-        flash(f"AI Extraction failed: {str(e)}", "danger")
-        return redirect(url_for('dashboard.dashboard'))
+        # 8. FAILURE: Catch-all error returning JSON
+        print(f"OCR Error: {e}") # Log it for debugging
+        return jsonify({"success": False, "message": "Failed to process image. Please try again."}), 500
 
 @transactions_bp.route('/save', methods=['POST'])
 @token_required
@@ -104,8 +104,8 @@ def save_transaction(user):
         flash("Transaction successfully audited and saved!", "success")
     except Exception as e:
         flash(f"Database Error: {str(e)}", "danger")
-    
-    return redirect(url_for('dashboard.dashboard'))
+
+    return redirect(url_for('transactions.list_transactions'))
 
 @transactions_bp.route('/debug-last-scan/<filename>')
 @token_required
@@ -113,13 +113,13 @@ def debug_last_scan(user, filename):
     """Temporary route to see raw AI output for a specific file."""
     import os
     from flask import jsonify, current_app
-    
+
     filepath = os.path.join(current_app.root_path, 'static', 'uploads', filename)
-    
+
     try:
         # Run the extraction
         raw_data = ocr_tool.extract_data(filepath)
-        
+
         # Return raw JSON to the browser
         return jsonify({
             "status": "success",

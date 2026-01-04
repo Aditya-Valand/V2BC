@@ -9,9 +9,9 @@
             </div>
 
             <div class="hidden md:flex items-center gap-1">
-                <a href="{{ url_for('dashboard.dashboard') }}" class="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-sm font-bold border border-indigo-100">Dashboard</a>
-                <a href="{{ url_for('transactions.list_transactions') }}" class="px-4 py-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-50 rounded-xl text-sm font-medium transition-all">Records</a>
-                <a href="#" class="px-4 py-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-50 rounded-xl text-sm font-medium transition-all">Loans</a>
+                <a href="{{ url_for('dashboard.dashboard') }}" class="px-4 py-2 text-slate-500 rounded-xl text-sm" :class="{'border border-indigo-200 bg-indigo-50 text-indigo-700' if request.path == url_for('dashboard.dashboard') else ''}">Dashboard</a>
+                <a href="{{ url_for('transactions.list_transactions') }}" class="px-4 py-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-50 rounded-xl text-sm font-medium transition-all" :class="{'border border-indigo-200 bg-indigo-50 text-indigo-700': request.path == url_for('transactions.list_transactions')}">Records</a>
+                <a href="{{ url_for('dashboard.profile') }}" class="px-4 py-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-50 rounded-xl text-sm font-medium transition-all" :class="{'border border-indigo-200 bg-indigo-50 text-indigo-700': request.path == url_for('dashboard.profile')}">Profile</a>
             </div>
         </div>
 

@@ -11,124 +11,213 @@ BharatCompliance Master Rule Engine (v2026.FINAL)
 Integrated Mapping: Micro-biz, Traders, Freelancers, and Gig Workers.
 """
 
+BUSINESS_LICENSES = {
+    'fssai_basic': {
+        'label': 'FSSAI Basic License',
+        'validity_years': 1,
+        'renewal_type': 'annual',
+        'penalty': 'Rs. 100 per day of delay after expiry.'
+    },
+    'fssai_state': {
+        'label': 'FSSAI State License',
+        'validity_years': "1 - 5 Years (Based on Fee)",
+        'renewal_type': 'periodic',
+        'penalty': 'Rs. 100 per day of delay; Working without license can attract fines up to Rs. 5 Lakhs and imprisonment.'
+    },
+    'shop_act': {
+        'label': 'Shops & Establishment Act',
+        'validity_years': 'state_dependent',
+        'renewal_type': 'periodic',
+        'penalty': 'State dependent (Typically Rs. 1000 - Rs. 5000 + Rs. 50/day late fees).'
+    },
+    'trade_license': {
+        'label': 'Trade License',
+        'validity_years': 1,
+        'renewal_type': 'annual',
+        'penalty': '50% surcharge on license fee if renewed after 30 days of expiry; Heavy fines for operating without one.'
+    },
+    'health_license': {
+        'label': 'Health License',
+        'validity_years': 1,
+        'renewal_type': 'annual',
+        'penalty': 'Fine varies by Municipality (Approx. Rs. 2000 - Rs. 5000); Risk of business closure.'
+    },
+    'udyam_registration': {
+        'label': 'Udyam Registration',
+        'validity_years': None,
+        'renewal_type': 'none',
+        'penalty': 'No direct penalty, but loss of MSME benefits and subsidies.'
+    },
+    'artisan_card': {
+        'label': 'Artisan Card',
+        'validity_years': None,
+        'renewal_type': 'none',
+        'penalty': 'No direct monetary penalty; Ineligibility for government artisan schemes.'
+    },
+    'pollution_noc': {
+        'label': 'Pollution Control NOC',
+        'validity_years': 1,
+        'renewal_type': 'periodic',
+        'penalty': 'Extremely high fines (up to Rs. 1 Lakh) and imprisonment up to 5 years; Power/Water disconnection.'
+    },
+    'current_account': {
+        'label': 'Current Account',
+        'validity_years': None,
+        'renewal_type': 'none',
+        'penalty': 'Bank charges for non-maintenance of Minimum Average Balance (MAB).'
+    },
+    'local_govt_registration': {
+        'label': 'Local Government Registration',
+        'validity_years': 'state_dependent',
+        'renewal_type': 'periodic',
+        'penalty': 'State dependent fines; Seizure of goods/street cart for vendors.'
+    },
+    'pm_svanidhi_id': {
+        'label': 'PM-SVANidhi ID',
+        'validity_years': None,
+        'renewal_type': 'none',
+        'penalty': 'No penalty; Loss of interest subsidy and eligibility for higher loan tranches.'
+    },
+    'e_shram_uan': {
+        'label': 'e-Shram UAN',
+        'validity_years': None,
+        'renewal_type': 'none',
+        'penalty': 'No penalty; Loss of social security benefits.'
+    },
+    'welfare_board_id': {
+        'label': 'Welfare Board ID',
+        'validity_years': None,
+        'renewal_type': 'none',
+        'penalty': 'No penalty; Ineligibility for specific welfare schemes (education, health, marriage assistance).'
+    }
+}
 BUSINESS_MAP = {
-    # --- GROUP 1: FOOD & EATERY (Micro-Businesses & Gig) ---
+
+    # --- FOOD & EATERY ---
     'tea_shop': {
         'label': 'Tea Shop / Dhaba',
         'sector': 'Micro-Food',
-        'gst_rate': 0.05,  # Standalone restaurant rate
+        'gst_rate': 0.05,
         'threshold': 2000000,
-        'licenses': ['FSSAI Basic', 'Shop Act'],
+        'licenses': ['fssai_basic', 'shop_act'],
         'is_food_biz': True,
         'jargon_free_tip': "Keep your FSSAI updated to avoid ₹2L fines. No GST needed if sales < ₹20L.",
         'loan_hint': "Eligible for MUDRA Shishu loans up to ₹50,000 for kitchen tools."
     },
+
     'cloud_kitchen': {
         'label': 'Cloud Kitchen',
         'sector': 'Gig/Food',
         'gst_rate': 0.05,
-        'threshold': 0,  # Mandatory GST for e-commerce/platform sellers
-        'licenses': ['FSSAI State', 'Udyam Registration'],
+        'threshold': 0,
+        'licenses': ['fssai_state', 'udyam_registration'],
         'jargon_free_tip': "Selling on Swiggy/Zomato? GST is mandatory from Day 1 even with ₹0 sales.",
         'loan_hint': "Use your platform sales history to get pre-approved digital loans."
     },
+
     'small_restaurant': {
         'label': 'Dhaba / Small Restaurant',
         'sector': 'Service',
         'gst_rate': 0.05,
         'threshold': 2000000,
-        'licenses': ['FSSAI State License', 'Shop Act', 'Trade License'],
-        'jargon_free_tip': "As a standalone restaurant, you pay a flat 5% GST. Keep your 'Health License' updated.",
+        'licenses': ['fssai_state', 'shop_act', 'trade_license'],
+        'jargon_free_tip': "As a standalone restaurant, you pay a flat 5% GST. Keep your Health License updated.",
         'loan_hint': "MUDRA Kishore loans (up to ₹5L) can help you buy better kitchen equipment."
     },
 
-    # --- GROUP 2: RETAIL & MANUFACTURING (Small Traders) ---
+    # --- RETAIL & MANUFACTURING ---
     'kirana_store': {
         'label': 'Kirana / Grocery Store',
         'sector': 'Retail Trade',
-        'gst_rate': 0.05,  # 0% for loose, 5% for branded
-        'threshold': 4000000,  # Higher limit for goods
-        'licenses': ['Shop Act', 'Udyam Registration'],
+        'gst_rate': 0.05,
+        'threshold': 4000000,
+        'licenses': ['shop_act', 'udyam_registration'],
         'jargon_free_tip': "Most loose items (milk/eggs) are 0%. Branded packets are 5%. Threshold is ₹40L.",
         'loan_hint': "Priority Sector Lending ensures banks must prioritize your loan application."
     },
+
     'boutique': {
         'label': 'Boutique / Garments',
         'sector': 'Retail Trade',
         'gst_rate': 0.05,
         'threshold': 4000000,
-        'licenses': ['Shop Act', 'Udyam Registration'],
-        'jargon_free_tip': "Cloth pieces below ₹2500 are 5%. Use Udyam to get a bank loan at 2% lower interest.",
+        'licenses': ['shop_act', 'udyam_registration'],
+        'jargon_free_tip': "Cloth pieces below ₹2500 are 5%. Use Udyam to get lower-interest bank loans.",
         'loan_hint': "Special Stand-Up India subsidies available for women entrepreneurs."
     },
+
     'handicraft_maker': {
         'label': 'Handicraft / Artist',
         'sector': 'Manufacturing',
         'gst_rate': 0.05,
         'threshold': 4000000,
-        'licenses': ['Artisan Card', 'Udyam Registration', 'Pollution NOC'],
-        'jargon_free_tip': "The government loves makers! You get a 50% subsidy on Patent/Trademark fees.",
-        'loan_hint': "Apply for the PMEGP scheme for a 15-35% subsidy on workshop setup."
+        'licenses': ['artisan_card', 'udyam_registration', 'pollution_noc'],
+        'jargon_free_tip': "The government supports makers. Get subsidies on patents & trademarks.",
+        'loan_hint': "Apply for PMEGP for 15–35% subsidy on workshop setup."
     },
 
-    # --- GROUP 3: SKILLED SERVICES (Freelancers & Pros) ---
+    # --- SKILLED SERVICES ---
     'web_developer': {
         'label': 'Web & App Developer',
         'sector': 'Freelance Professional',
-        'gst_rate': 0.18,  # Standard for IT
+        'gst_rate': 0.18,
         'threshold': 2000000,
-        'licenses': ['Udyam Registration', 'Current Account'],
-        'jargon_free_tip': "You qualify for Sec 44ADA. Only pay tax on 50% of your income! No audit needed if income < ₹75L.",
-        'loan_hint': "Professional loans available for high-end equipment like MacBooks/Servers."
+        'licenses': ['udyam_registration', 'current_account'],
+        'jargon_free_tip': "Use Sec 44ADA. Pay tax on only 50% of income. No audit below ₹75L.",
+        'loan_hint': "Professional loans available for laptops and servers."
     },
+
     'mobile_repair': {
         'label': 'Mobile & Electronics Repair',
         'sector': 'Service',
-        'gst_rate': 0.18,  # Appliances and repairs
+        'gst_rate': 0.18,
         'threshold': 2000000,
-        'licenses': ['Trade License', 'Shop Act'],
-        'jargon_free_tip': "Electronics and repair services are in the high-tax 18% slab. Keep digital bills.",
-        'loan_hint': "Your UPI transaction volume can act as proof of creditworthiness for loans."
+        'licenses': ['trade_license', 'shop_act'],
+        'jargon_free_tip': "Repair services fall under 18% GST. Keep digital bills.",
+        'loan_hint': "UPI transaction history helps in loan approvals."
     },
+
     'salon': {
         'label': 'Salon / Spa',
         'sector': 'Personal Service',
-        'gst_rate': 0.18,  # 5% for basic, 18% for luxury facials
+        'gst_rate': 0.18,
         'threshold': 2000000,
-        'licenses': ['Health License', 'Trade License', 'Shops Act'],
-        'jargon_free_tip': "Basic cuts are 5%. Luxury facials are 18%. Threshold for services is ₹20L.",
-        'loan_hint': "MUDRA Kishore loans can help you upgrade salon chairs and equipment."
+        'licenses': ['health_license', 'trade_license', 'shop_act'],
+        'jargon_free_tip': "Basic services are 5%, luxury services 18%. Threshold ₹20L.",
+        'loan_hint': "MUDRA Kishore loans can help upgrade equipment."
     },
+
     'coaching': {
         'label': 'Coaching Center',
         'sector': 'Education Services',
-        'gst_rate': 0.00,  # Education is exempt
+        'gst_rate': 0.00,
         'threshold': 2000000,
-        'licenses': ['Udyam Registration', 'Local Govt. Registration'],
-        'jargon_free_tip': "Education is a 'Noble Service' - it is GST exempt! Focus on student growth.",
-        'loan_hint': "Education-sector MSMEs get special lower interest rates from banks."
+        'licenses': ['udyam_registration', 'local_govt_registration'],
+        'jargon_free_tip': "Education services are GST-exempt. Focus on compliance basics.",
+        'loan_hint': "Education MSMEs get lower interest loans."
     },
 
-    # --- GROUP 4: MICRO-VENDORS & GIG WORKERS ---
+    # --- MICRO & GIG ---
     'street_vendor': {
         'label': 'Street Vendor',
         'sector': 'Micro-Vendor',
         'gst_rate': 0.00,
         'threshold': 2000000,
-        'licenses': ['PM-SVANidhi ID'],
-        'jargon_free_tip': "You are safe. Use your Vendor ID to get a ₹10,000 collateral-free loan.",
-        'loan_hint': "Timely repayment of PM-SVANidhi loans unlocks limits up to ₹50,000."
+        'licenses': ['pm_svanidhi_id'],
+        'jargon_free_tip': "Use PM-SVANidhi to get collateral-free loans.",
+        'loan_hint': "Good repayment increases loan limits up to ₹50,000."
     },
+
     'delivery_gig': {
-        'label': '🛵 Delivery / Quick-Commerce',
+        'label': 'Delivery / Quick-Commerce',
         'sector': 'Gig Economy',
-        'gst_rate': 0.00,  # Handled by platform
+        'gst_rate': 0.00,
         'threshold': 2000000,
-        'licenses': ['e-Shram UAN', 'Welfare Board ID'],
-        'welfare_fund_rate': 0.02, # 1-2% of turnover
-        'min_engagement_days': 90, # 90 days needed to qualify for benefits
-        'jargon_free_tip': "Your platform handles the GST. Focus on your e-Shram benefits for insurance.",
-        'loan_hint': "Eligible for PM-SVANidhi micro-loans based on platform ratings."
+        'licenses': ['e_shram_uan', 'welfare_board_id'],
+        'welfare_fund_rate': 0.02,
+        'min_engagement_days': 90,
+        'jargon_free_tip': "Platforms handle GST. Register on e-Shram for insurance benefits.",
+        'loan_hint': "Platform ratings help unlock micro-loans."
     }
 }
 
@@ -149,7 +238,7 @@ class ComplianceEngine:
     @staticmethod
     def validate_business(biz_key: str, turnover: float, state: str = "General") -> ComplianceResult:
         biz = BUSINESS_MAP.get(biz_key)
-        
+
         # Initializing checklist early to avoid UnboundLocalError
         checklist = []
 
@@ -161,17 +250,17 @@ class ComplianceEngine:
         threshold = 1000000 if state in special_states and biz['sector'] in ['Service', 'Gig Economy'] else biz['threshold']
 
         is_above = turnover > threshold
-        checklist.append(f"Limit Status: {'🚨 Crossed' if is_above else '✅ Within safe limit'}")
+        checklist.append(f"Limit Status: {'Crossed' if is_above else 'Within safe limit'}")
 
         # Business Logic Updates
         if biz.get('sector') == 'Gig Economy':
-            checklist.append(f"🔴 Aggregator must contribute {biz['welfare_fund_rate']*100}% to Welfare Fund.")
-            checklist.append("🔹 Port your benefits via Aadhaar-linked e-Shram ID.")
+            checklist.append(f"Aggregator must contribute {biz['welfare_fund_rate']*100}% to Welfare Fund.")
+            checklist.append("Port your benefits via Aadhaar-linked e-Shram ID.")
             checklist.append("Sync e-Shram ID for free health cover (AB-PMJAY).")
 
         if biz.get('is_food_biz'):
             fssai_tier = "Basic (₹100)" if turnover <= 1200000 else "State (₹2000+)"
-            checklist.append(f"🍔 Required License: FSSAI {fssai_tier}")    
+            checklist.append(f"Required License: FSSAI {fssai_tier}")
 
         if is_above:
             checklist.extend(["Register for GST immediately", "Issue GST Invoices"])
@@ -184,22 +273,19 @@ class ComplianceEngine:
         for lic in biz['licenses']:
             checklist.append(f"Renew/Obtain: {lic}")
 
-        # --- DYNAMIC SCORE & PENALTY CALCULATION ---
         # Calculate score (0-100) based on how much of the threshold is used
-        # if threshold > 0:
-        #     usage_ratio = turnover / threshold
-        #     # Score stays high if under limit, drops to 60 if over limit
-        #     calc_score = int(max(0, (1 - usage_ratio) * 100)) if not is_above else 60
-        # else:
-        #     calc_score = 100
-            
-        # # Estimated penalty if above threshold (Standard 18% GST estimate)
-        # calc_penalty = round((turnover - threshold) * 0.18, 2) if is_above else 0.0
-        calc_score = 78 if not is_above else 45
-        calc_penalty = 0.0 if not is_above else round((turnover - threshold) * 0.18, 2)
+        if threshold > 0:
+            usage_ratio = turnover / threshold
+            # Score stays high if under limit, drops to 60 if over limit
+            calc_score = int(max(0, (1 - usage_ratio) * 100)) if not is_above else 60
+        else:
+            calc_score = 100
+
+        # Estimated penalty if above threshold (Standard 18% GST estimate)
+        calc_penalty = round((turnover - threshold) * 0.18, 2) if is_above else 0.0
 
         return ComplianceResult(
-            status="🔴 ACTION REQUIRED" if is_above else "🟢 SAFE",
+            status="ACTION REQUIRED" if is_above else "SAFE",
             message=biz['jargon_free_tip'],
             color="red" if is_above else "green",
             checklist=checklist,
@@ -207,6 +293,8 @@ class ComplianceEngine:
             score=min(calc_score, 100),
             penalty=calc_penalty
         )
+
+
 class LoanEligibilityEngine:
     @staticmethod
     def get_readiness_score(user_data: dict, tx_count: int) -> Tuple[int, List[str]]:
@@ -215,21 +303,21 @@ class LoanEligibilityEngine:
         reasons = []
 
         # 1. Digital Documentation (60 points)
-        if user_data.get('has_udyam'): 
+        if user_data.get('has_udyam'):
             score += 20
             reasons.append("Udyam Registration Verified (+20)")
-        if user_data.get('has_itr'): 
+        if user_data.get('has_itr'):
             score += 20
             reasons.append("ITR Filing History (+20)")
-        if user_data.get('has_gst'): 
+        if user_data.get('has_gst'):
             score += 20
             reasons.append("GST Compliance Active (+20)")
 
         # 2. Digital Traction (40 points)
-        if tx_count > 30: 
+        if tx_count > 30:
             score += 40
             reasons.append("High Transaction Volume (+40)")
-        elif tx_count > 10: 
+        elif tx_count > 10:
             score += 20
             reasons.append("Moderate Transaction Volume (+20)")
 
