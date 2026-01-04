@@ -1,9 +1,9 @@
 ### PROBLEM STATEMENT : PS 15 : Real-Time Tax & Compliance Copilot for Micro-Businesses
 ### PROJECT NAME      : BharatCompliance
 ### TEAM NAME         : TEAM ZERO
-### DEPLOYED LINK     : [Insert Link Here or leave blank]
+### DEPLOYED LINK     : [Website Demo](https://bharatcomplianceb.onrender.com)
 ### VIDEO LINK        : [Insert Link Here]
-### PPT LINK          : [Insert Link Here]
+### PPT LINK          : [Presentation PPTX](https://docs.google.com/presentation/d/1KDWhQYRk_OeN82xKNREEAgIfyb_jCLLw/edit?usp=sharing&ouid=105976556751002261039&rtpof=true&sd=true)
 
 ---
 
@@ -33,7 +33,7 @@ Unlike standard accounting software, our solution uses **Gemini Vision AI** to a
 
 1.  **Clone the Repository**
     ```bash
-    git clone [https://github.com/ByteQuest-2025/GFGBQ-Team-teamzero.git](https://github.com/ByteQuest-2025/GFGBQ-Team-teamzero.git)
+    git clone https://github.com/ByteQuest-2025/GFGBQ-Team-teamzero.git
     cd GFGBQ-Team-teamzero
     ```
 
