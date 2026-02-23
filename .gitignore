@@ -8,6 +8,9 @@ ENV/
 .venv/
 .env
 web/.env
+bc_core/key.json
+*.json
+
 
 __pycache__/
 web/__pycache__/
