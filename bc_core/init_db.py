@@ -16,7 +16,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
 # Import models
-from modules.auth.models import User, UserOrganizationPermission
+from modules.auth.models import User, OrgMember, UserOrganizationPermission, JWTBlocklist
 from modules.organizations.models import Organization
 from modules.businesses.models import Business
 from modules.statements.models import BusinessStatement

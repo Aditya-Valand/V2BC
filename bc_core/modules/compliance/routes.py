@@ -51,7 +51,7 @@ def organization_risk_summary(org_id):
     # Verify user access
     perm = UserOrganizationPermission.query.filter_by(
         user_id=current_user_id,
-        organization_id=org_id
+        org_id=org_id
     ).first()
     
     if not perm:
@@ -62,7 +62,7 @@ def organization_risk_summary(org_id):
         return {'error': 'Organization not found'}, 404
     
     # Get all businesses
-    businesses = Business.query.filter_by(organization_id=org_id).all()
+    businesses = Business.query.filter_by(org_id=org_id).all()
     business_ids = [b.id for b in businesses]
     
     if not business_ids:
@@ -195,7 +195,7 @@ def business_compliance_profile(business_id):
     # Verify user access
     perm = UserOrganizationPermission.query.filter_by(
         user_id=current_user_id,
-        organization_id=business.organization_id
+        org_id=business.org_id
     ).first()
     
     if not perm:
@@ -281,7 +281,7 @@ def organization_open_alerts(org_id):
     # Verify access
     perm = UserOrganizationPermission.query.filter_by(
         user_id=current_user_id,
-        organization_id=org_id
+        org_id=org_id
     ).first()
     
     if not perm:
@@ -292,7 +292,7 @@ def organization_open_alerts(org_id):
         return {'error': 'Organization not found'}, 404
     
     # Get all business IDs for this org
-    business_ids = [b.id for b in Business.query.filter_by(organization_id=org_id).all()]
+    business_ids = [b.id for b in Business.query.filter_by(org_id=org_id).all()]
     
     if not business_ids:
         return jsonify({
@@ -371,7 +371,7 @@ def acknowledge_alert(alert_id):
     business = alert.business
     perm = UserOrganizationPermission.query.filter_by(
         user_id=current_user_id,
-        organization_id=business.organization_id
+        org_id=business.org_id
     ).first()
     
     if not perm:
@@ -403,7 +403,7 @@ def resolve_alert(alert_id):
     business = alert.business
     perm = UserOrganizationPermission.query.filter_by(
         user_id=current_user_id,
-        organization_id=business.organization_id
+        org_id=business.org_id
     ).first()
     
     if not perm:
@@ -437,7 +437,7 @@ def organization_discipline_ranking(org_id):
     # Verify access
     perm = UserOrganizationPermission.query.filter_by(
         user_id=current_user_id,
-        organization_id=org_id
+        org_id=org_id
     ).first()
     
     if not perm:
@@ -448,7 +448,7 @@ def organization_discipline_ranking(org_id):
         return {'error': 'Organization not found'}, 404
     
     # Get all businesses
-    business_ids = [b.id for b in Business.query.filter_by(organization_id=org_id).all()]
+    business_ids = [b.id for b in Business.query.filter_by(org_id=org_id).all()]
     
     if not business_ids:
         return jsonify({
@@ -500,7 +500,7 @@ def organization_dashboard(org_id):
     # Verify user has access to this organization
     perm = UserOrganizationPermission.query.filter_by(
         user_id=current_user_id,
-        organization_id=org_id
+        org_id=org_id
     ).first()
     
     if not perm:
@@ -511,7 +511,7 @@ def organization_dashboard(org_id):
         return {'error': 'Organization not found'}, 404
     
     # Get all businesses for this organization
-    businesses = Business.query.filter_by(organization_id=org_id).all()
+    businesses = Business.query.filter_by(org_id=org_id).all()
     
     dashboard_data = {
         'organization': {
@@ -564,7 +564,7 @@ def business_statements(business_id):
     # Verify user has access
     perm = UserOrganizationPermission.query.filter_by(
         user_id=current_user_id,
-        organization_id=business.organization_id
+        org_id=business.org_id
     ).first()
     
     if not perm:
@@ -613,7 +613,7 @@ def business_evidence(business_id):
     # Verify user has access
     perm = UserOrganizationPermission.query.filter_by(
         user_id=current_user_id,
-        organization_id=business.organization_id
+        org_id=business.org_id
     ).first()
     
     if not perm:
@@ -669,7 +669,7 @@ def weak_evidence(business_id):
     # Verify user has access
     perm = UserOrganizationPermission.query.filter_by(
         user_id=current_user_id,
-        organization_id=business.organization_id
+        org_id=business.org_id
     ).first()
     
     if not perm:
@@ -722,7 +722,7 @@ def organization_summary(org_id):
     
     perm = UserOrganizationPermission.query.filter_by(
         user_id=current_user_id,
-        organization_id=org_id
+        org_id=org_id
     ).first()
     
     if not perm:
@@ -732,7 +732,7 @@ def organization_summary(org_id):
     if not org:
         return {'error': 'Organization not found'}, 404
     
-    businesses = Business.query.filter_by(organization_id=org_id).all()
+    businesses = Business.query.filter_by(org_id=org_id).all()
     business_ids = [b.id for b in businesses]
     
     statements = BusinessStatement.query.filter(
