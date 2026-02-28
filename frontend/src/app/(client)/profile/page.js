@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import {
   User, Phone, Building2, Shield, Eye, EyeOff,
   ArrowLeft, Loader2, Lock, CheckCircle2,
-  Star, FileText, Globe, LogOut, ChevronRight,
+  Star, FileText, Globe, LogOut, ChevronRight, Receipt, Upload,
 } from "lucide-react";
 import { authApi } from "@/lib/api/auth";
 import { getApiError } from "@/lib/api/client";
@@ -251,6 +251,22 @@ export default function ClientProfilePage() {
             href="/annual-report"
             iconBg="bg-indigo-50"
             iconColor="text-indigo-600"
+          />
+          <LinkRow
+            icon={Receipt}
+            label="GST Invoice Generator"
+            sub="Create print-ready GST invoices"
+            href="/invoice"
+            iconBg="bg-emerald-50"
+            iconColor="text-emerald-600"
+          />
+          <LinkRow
+            icon={Upload}
+            label="Import Bank Statement"
+            sub="Auto-create transactions from CSV"
+            href="/import-statement"
+            iconBg="bg-violet-50"
+            iconColor="text-violet-600"
           />
         </div>
       </div>

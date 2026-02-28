@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Search, X, Copy, Check, ExternalLink,
   Users, AlertTriangle, Clock, UserCheck, ChevronRight,
-  Phone, Building2, QrCode,
+  Phone, Building2, QrCode, Upload, FileText, CheckCircle2, XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ import { clientsApi } from "@/lib/api/clients";
 import { getApiError } from "@/lib/api/client";
 import { COMPLIANCE_COLORS } from "@/constants";
 import { formatDate, timeAgo, getInitials } from "@/lib/utils";
+import apiClient from "@/lib/api/client";
 
 // ── Constants ────────────────────────────────────────────────────────
 const BUSINESS_TYPES = [
@@ -165,6 +166,177 @@ function FormField({ label, error, required, children }) {
       </label>
       {children}
       <FieldError msg={error} />
+    </div>
+  );
+}
+
+// ── CSV Import Template ───────────────────────────────────────────────
+
+const CSV_TEMPLATE = `name,business_type,state,phone,gstin,pan,expected_turnover,whatsapp_phone
+Ram Prasad Tea Stall,food,Maharashtra,9876543210,,,200000,9876543210
+Priya Fashion Boutique,retail,Gujarat,8765432109,,,500000,
+Suresh Transport Co,transport,Rajasthan,7654321098,,,1500000,7654321098
+`;
+
+function downloadCsvTemplate() {
+  const blob = new Blob([CSV_TEMPLATE], { type: "text/csv" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = "clients_import_template.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── CSV Import Modal ──────────────────────────────────────────────────
+
+function CsvImportModal({ onClose, onDone }) {
+  const fileRef  = useRef(null);
+  const [file,   setFile]   = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const qc = useQueryClient();
+
+  const handleFileChange = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (!f.name.toLowerCase().endsWith(".csv")) { toast.error("Only CSV files accepted."); return; }
+    if (f.size > 600_000) { toast.error("File too large. Max 500 KB."); return; }
+    setFile(f);
+    setResult(null);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const f = e.dataTransfer.files?.[0];
+    if (f) handleFileChange({ target: { files: [f] } });
+  };
+
+  const handleUpload = async () => {
+    if (!file) { toast.error("Select a CSV file first."); return; }
+    setLoading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await apiClient.post("/clients/import", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const data = res.data.data;
+      setResult(data);
+      if (data.created_count > 0) {
+        qc.invalidateQueries({ queryKey: ["ca-clients"] });
+        toast.success(`${data.created_count} client${data.created_count !== 1 ? "s" : ""} imported!`);
+      } else {
+        toast.warning("No clients could be imported. Check skipped rows.");
+      }
+    } catch (err) {
+      const msg = err.response?.data?.error;
+      toast.error(typeof msg === "string" ? msg : "Upload failed. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[90vh] flex flex-col shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+          <div>
+            <h2 className="text-base font-bold text-slate-800">Import Clients from CSV</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Bulk-add up to 200 clients in one upload</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto flex-1 px-6 py-4 space-y-4">
+          {/* Template download */}
+          <div className="bg-slate-50 rounded-xl p-3 flex items-center justify-between">
+            <div className="text-xs text-slate-600">
+              <p className="font-semibold mb-0.5">Need the template?</p>
+              <p className="text-slate-400">Required columns: <code className="bg-slate-200 px-1 rounded">name</code></p>
+            </div>
+            <button
+              onClick={downloadCsvTemplate}
+              className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50"
+            >
+              <FileText size={13} /> Download Template
+            </button>
+          </div>
+
+          {/* Drop zone */}
+          <div
+            onDrop={handleDrop}
+            onDragOver={(e) => e.preventDefault()}
+            onClick={() => fileRef.current?.click()}
+            className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors
+              ${file ? "border-green-400 bg-green-50" : "border-slate-300 hover:border-blue-400 hover:bg-blue-50"}`}
+          >
+            <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
+            {file ? (
+              <div className="space-y-1">
+                <CheckCircle2 size={28} className="text-green-500 mx-auto" />
+                <p className="text-sm font-semibold text-green-700">{file.name}</p>
+                <p className="text-xs text-green-500">{(file.size / 1024).toFixed(1)} KB · Click to change</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Upload size={28} className="text-slate-400 mx-auto" />
+                <p className="text-sm font-semibold text-slate-700">Drop CSV here or click to browse</p>
+                <p className="text-xs text-slate-400">Max 500 KB · up to 200 rows</p>
+              </div>
+            )}
+          </div>
+
+          {/* Results */}
+          {result && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-center">
+                  <p className="text-xl font-bold text-green-700">{result.created_count}</p>
+                  <p className="text-xs text-green-600 mt-0.5">Clients Created</p>
+                </div>
+                <div className={`border rounded-xl p-3 text-center ${result.skipped_count > 0 ? "bg-amber-50 border-amber-200" : "bg-slate-50 border-slate-200"}`}>
+                  <p className={`text-xl font-bold ${result.skipped_count > 0 ? "text-amber-700" : "text-slate-500"}`}>{result.skipped_count}</p>
+                  <p className={`text-xs mt-0.5 ${result.skipped_count > 0 ? "text-amber-600" : "text-slate-400"}`}>Skipped</p>
+                </div>
+              </div>
+
+              {result.skipped.length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                  <p className="text-xs font-semibold text-amber-700 mb-2">Skipped rows:</p>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {result.skipped.map((s, i) => (
+                      <div key={i} className="text-xs text-amber-600 flex gap-2">
+                        <span className="font-medium">Row {s.row}:</span>
+                        <span>{s.name && `${s.name} — `}{s.reason}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-slate-100 flex gap-3 shrink-0">
+          <button onClick={onClose} className="btn-outline flex-1">
+            {result ? "Close" : "Cancel"}
+          </button>
+          {!result && (
+            <button
+              onClick={handleUpload}
+              disabled={!file || loading}
+              className="btn-primary flex-1"
+            >
+              {loading ? "Importing…" : "Import Clients"}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -407,6 +579,7 @@ export default function ClientsPage() {
   const [search,      setSearch]      = useState("");
   const [filter,      setFilter]      = useState("all");
   const [showAdd,     setShowAdd]     = useState(false);
+  const [showImport,  setShowImport]  = useState(false);
   const [inviteData,  setInviteData]  = useState(null);
 
   const { data, isLoading } = useQuery({
@@ -442,13 +615,23 @@ export default function ClientsPage() {
             {isLoading ? "Loading…" : `${clients.length} client${clients.length !== 1 ? "s" : ""}`}
           </p>
         </div>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="btn-primary gap-2"
-        >
-          <Plus size={16} />
-          Add Client
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowImport(true)}
+            className="btn-outline gap-1.5 text-sm"
+            title="Import clients from CSV"
+          >
+            <Upload size={14} />
+            Import CSV
+          </button>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="btn-primary gap-2"
+          >
+            <Plus size={16} />
+            Add Client
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -522,6 +705,12 @@ export default function ClientsPage() {
         <AddClientModal
           onClose={() => setShowAdd(false)}
           onCreated={(res) => { setShowAdd(false); setInviteData(res); }}
+        />
+      )}
+      {showImport && (
+        <CsvImportModal
+          onClose={() => setShowImport(false)}
+          onDone={() => setShowImport(false)}
         />
       )}
       {inviteData && (

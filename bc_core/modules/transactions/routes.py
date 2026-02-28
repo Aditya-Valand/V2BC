@@ -8,6 +8,8 @@ my_bp            /my            — list, summary (client-facing read)
 
 All routes require JWT with role='client' and business_id claim.
 """
+import csv
+import io
 import logging
 from datetime import date, datetime
 
@@ -435,3 +437,199 @@ def annual_summary():
             "transaction_count": total_tx,
         },
     })
+
+
+# ================================================================== #
+# Phase 3: POST /my/import-bank-statement — Bank statement CSV import
+# ================================================================== #
+
+@my_bp.route("/import-bank-statement", methods=["POST"])
+@jwt_required()
+@_require_client
+@limiter.limit("20 per day")
+def import_bank_statement():
+    """
+    Parse a bank statement CSV and auto-create transactions.
+
+    Supported CSV formats (auto-detected):
+      Generic:  date, description, amount, type (sale/expense)
+      Debit/Credit columns: date, description, debit, credit
+      SBI style: Date, Description, Amount (Debit), Amount (Credit)
+
+    Rules:
+      - Credit amounts → sale
+      - Debit amounts  → expense
+      - Rows where both debit and credit are 0 are skipped (charges, interest, etc.)
+      - Duplicate detection: same amount + date already in DB → skipped with warning
+      - Max 500 rows per upload
+
+    Response
+    --------
+    created_count, skipped_count, created (array), skipped (array with reasons)
+    """
+    business_id = _business_id()
+
+    if "file" not in request.files:
+        return _err("No file uploaded. Send CSV as 'file' in multipart/form-data.", 400)
+
+    f = request.files["file"]
+    if not f.filename.lower().endswith(".csv"):
+        return _err("Only CSV files are accepted.", 400)
+
+    raw_bytes = f.read(2_000_000)  # 2 MB cap
+    if len(raw_bytes) >= 2_000_000:
+        return _err("File too large. Maximum size is 2 MB.", 400)
+
+    try:
+        text = raw_bytes.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        try:
+            text = raw_bytes.decode("latin-1")
+        except Exception:
+            return _err("Cannot decode CSV. Use UTF-8 encoding.", 400)
+
+    reader = csv.DictReader(io.StringIO(text))
+    if not reader.fieldnames:
+        return _err("CSV has no headers.", 400)
+
+    # Normalise headers to lowercase with no whitespace
+    headers_lower = {h.strip().lower().replace(" ", "_") for h in reader.fieldnames}
+
+    # Detect format
+    has_debit_credit = bool(
+        ({"debit", "credit"} <= headers_lower) or
+        ({"amount_(debit)", "amount_(credit)"} <= headers_lower) or
+        ({"withdrawal_amt.", "deposit_amt."} <= headers_lower) or
+        ({"withdrawals", "deposits"} <= headers_lower)
+    )
+    has_type = "type" in headers_lower
+
+    rows = list(reader)
+    if len(rows) > 500:
+        return _err("Maximum 500 rows per import. Split the file and re-upload.", 400)
+
+    def _clean_amount(val: str) -> float:
+        if not val:
+            return 0.0
+        cleaned = val.replace(",", "").replace("₹", "").replace(" ", "").strip()
+        try:
+            return abs(float(cleaned))
+        except ValueError:
+            return 0.0
+
+    def _parse_date(val: str):
+        val = val.strip()
+        for fmt in ("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d %b %Y", "%d-%b-%Y", "%d/%m/%y"):
+            try:
+                return datetime.strptime(val, fmt).date()
+            except ValueError:
+                continue
+        return None
+
+    created, skipped = [], []
+
+    for i, row in enumerate(rows, start=2):
+        norm = {k.strip().lower().replace(" ", "_"): (v.strip() if v else "") for k, v in row.items()}
+
+        # --- Parse date ---
+        date_val = None
+        for dk in ("date", "transaction_date", "value_dt", "txn_date"):
+            if dk in norm and norm[dk]:
+                date_val = _parse_date(norm[dk])
+                break
+        if not date_val:
+            skipped.append({"row": i, "reason": "Cannot parse date"})
+            continue
+
+        # --- Parse description ---
+        desc = ""
+        for dk in ("description", "narration", "particulars", "remarks", "details"):
+            if dk in norm and norm[dk]:
+                desc = norm[dk][:200]
+                break
+
+        # --- Parse amount and type ---
+        tx_type = None
+        amount  = 0.0
+
+        if has_debit_credit:
+            # Try various column name conventions
+            credit = 0.0
+            debit  = 0.0
+            for ck in ("credit", "deposit_amt.", "deposits", "amount_(credit)"):
+                if ck in norm:
+                    credit = _clean_amount(norm[ck])
+                    break
+            for dk in ("debit", "withdrawal_amt.", "withdrawals", "amount_(debit)"):
+                if dk in norm:
+                    debit = _clean_amount(norm[dk])
+                    break
+
+            if credit > 0 and debit == 0:
+                tx_type, amount = "sale", credit
+            elif debit > 0 and credit == 0:
+                tx_type, amount = "expense", debit
+            elif credit > 0 and debit > 0:
+                # Rare — treat net direction
+                if credit >= debit:
+                    tx_type, amount = "sale", credit - debit
+                else:
+                    tx_type, amount = "expense", debit - credit
+            else:
+                skipped.append({"row": i, "reason": "Zero amount row skipped"})
+                continue
+
+        elif has_type:
+            raw_type = norm.get("type", "").lower()
+            amount   = _clean_amount(norm.get("amount", ""))
+            if raw_type in ("sale", "income", "credit", "cr"):
+                tx_type = "sale"
+            elif raw_type in ("expense", "debit", "dr", "payment"):
+                tx_type = "expense"
+            else:
+                skipped.append({"row": i, "reason": f"Unknown type '{raw_type}'"})
+                continue
+        else:
+            # Fallback: single 'amount' column — treat positive as sale, negative as expense
+            raw_amount = norm.get("amount", "0")
+            is_neg = raw_amount.strip().startswith("-")
+            amount = _clean_amount(raw_amount)
+            tx_type = "expense" if is_neg else "sale"
+
+        if amount <= 0:
+            skipped.append({"row": i, "reason": "Zero or negative amount"})
+            continue
+
+        # --- Create transaction ---
+        try:
+            result = service.create_transaction(
+                business_id      = business_id,
+                tx_type          = tx_type,
+                amount           = amount,
+                category         = desc[:60] if desc else None,
+                transaction_date = date_val,
+                description      = desc or f"Imported from bank statement row {i}",
+                file             = None,
+            )
+            stmt = result["transaction"]
+            entry = {
+                "row":    i,
+                "id":     stmt.id,
+                "type":   tx_type,
+                "amount": amount,
+                "date":   date_val.isoformat(),
+                "desc":   desc,
+            }
+            if result.get("duplicate_warning"):
+                entry["warning"] = "Possible duplicate"
+            created.append(entry)
+        except Exception as exc:
+            logger.exception("import_bank_statement: row %d error — %s", i, exc)
+            skipped.append({"row": i, "reason": "Failed to save. Try again."})
+
+    return _ok({
+        "created_count": len(created),
+        "skipped_count": len(skipped),
+        "created":       created,
+        "skipped":       skipped,
+    }, 201 if created else 200)

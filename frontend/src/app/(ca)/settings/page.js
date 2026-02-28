@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   User, Lock, Building2, Phone, Mail, MapPin, Hash,
-  CheckCircle2, Eye, EyeOff, Shield, CreditCard, Save,
+  CheckCircle2, Eye, EyeOff, Shield, CreditCard, Save, ExternalLink, Globe,
 } from "lucide-react";
 import { toast } from "sonner";
 import { authApi } from "@/lib/api/auth";
@@ -327,6 +327,56 @@ function FirmSection() {
 
 // ── Main Page ─────────────────────────────────────────────────────────
 
+// ── Public Profile Card ───────────────────────────────────────────────
+
+function PublicProfileCard() {
+  const { org } = useAuthStore();
+  if (!org?.id) return null;
+
+  const profileUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/ca/${org.id}`
+    : `/ca/${org?.id}`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(profileUrl).then(() => toast.success("Link copied!"));
+  };
+
+  return (
+    <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-5 text-white">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <Globe size={15} className="text-blue-200 shrink-0" />
+            <p className="text-xs font-semibold text-blue-200 uppercase tracking-wide">Public Profile Page</p>
+          </div>
+          <h3 className="font-bold text-white mb-1">{org.name}</h3>
+          <p className="text-blue-200 text-xs mb-3 truncate">{profileUrl}</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleCopy}
+              className="bg-white/20 hover:bg-white/30 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Copy Link
+            </button>
+            <a
+              href={profileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 bg-white text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+            >
+              <ExternalLink size={12} />
+              View Profile
+            </a>
+          </div>
+        </div>
+      </div>
+      <p className="text-blue-200 text-xs mt-3">
+        Share this page with potential clients as your trust &amp; marketing page.
+      </p>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -336,6 +386,7 @@ export default function SettingsPage() {
         <p className="text-sm text-slate-400 mt-0.5">Manage your profile, password, and firm information.</p>
       </div>
 
+      <PublicProfileCard />
       <ProfileSection />
       <PasswordSection />
       <FirmSection />

@@ -20,6 +20,8 @@ GET   /invite/:code      — landing page data (CA name, client name)
 POST  /invite/accept     — client submits name + phone + pin
 POST  /invite/verify-otp — client verifies phone OTP → tokens issued
 """
+import csv
+import io
 import logging
 
 from flask import Blueprint, jsonify, request
@@ -548,3 +550,117 @@ def invite_verify_otp():
             "invite_status": business.invite_status,
         } if business else None,
     })
+
+
+# ================================================================== #
+# Phase 3: POST /clients/import — Bulk CSV client import
+# ================================================================== #
+
+@clients_bp.route("/import", methods=["POST"])
+@jwt_required()
+@limiter.limit("10 per hour")
+def import_clients_csv():
+    """
+    Bulk-create clients from a CSV file.
+
+    Expected CSV columns (header row required):
+      name          — required
+      business_type — optional (retail/food/services/manufacturing/other)
+      state         — optional (Indian state name)
+      phone         — optional
+      gstin         — optional
+      pan           — optional
+      expected_turnover — optional (numeric)
+      whatsapp_phone — optional
+
+    Returns a summary with created count, skipped rows, and error details.
+
+    Edge cases
+    ----------
+    - File too large (>500 KB)   → 400
+    - Missing 'name' column      → 400
+    - Row with duplicate GSTIN   → skipped (error noted)
+    - Row with bad phone format  → skipped (error noted)
+    - Max 200 rows per upload    → 400 if exceeded
+    """
+    org_id = _org_id_from_token()
+    if not org_id:
+        return _err("Token does not contain org_id. Please log in again.", 401)
+
+    if "file" not in request.files:
+        return _err("No file uploaded. Send a CSV as 'file' in multipart/form-data.", 400)
+
+    f = request.files["file"]
+    if not f.filename.lower().endswith(".csv"):
+        return _err("Only CSV files are accepted.", 400)
+
+    raw_bytes = f.read(600_000)  # 600 KB hard cap
+    if len(raw_bytes) >= 600_000:
+        return _err("File too large. Maximum size is 500 KB.", 400)
+
+    try:
+        text = raw_bytes.decode("utf-8-sig")  # handle BOM from Excel
+    except UnicodeDecodeError:
+        return _err("CSV must be UTF-8 encoded.", 400)
+
+    reader = csv.DictReader(io.StringIO(text))
+    if not reader.fieldnames:
+        return _err("CSV has no headers.", 400)
+
+    headers_lower = [h.strip().lower() for h in reader.fieldnames]
+    if "name" not in headers_lower:
+        return _err("CSV must contain a 'name' column.", 400)
+
+    rows = list(reader)
+    if len(rows) > 200:
+        return _err("Maximum 200 rows per import. Split the file and re-upload.", 400)
+
+    created, skipped = [], []
+
+    for i, row in enumerate(rows, start=2):  # row 1 = header
+        # Normalise keys
+        norm = {k.strip().lower(): (v.strip() if v else "") for k, v in row.items()}
+        name = norm.get("name", "")
+        if not name:
+            skipped.append({"row": i, "reason": "Missing name"})
+            continue
+
+        kwargs = {
+            "org_id":            org_id,
+            "name":              name,
+            "business_type":     norm.get("business_type") or None,
+            "state":             norm.get("state") or None,
+            "phone":             norm.get("phone") or None,
+            "gstin":             norm.get("gstin") or None,
+            "pan":               norm.get("pan") or None,
+            "whatsapp_phone":    norm.get("whatsapp_phone") or None,
+            "expected_turnover": None,
+        }
+
+        raw_turnover = norm.get("expected_turnover", "")
+        if raw_turnover:
+            try:
+                kwargs["expected_turnover"] = float(raw_turnover.replace(",", ""))
+            except ValueError:
+                pass  # silently ignore bad turnover
+
+        try:
+            result = service.create_client(**kwargs)
+            b = result["business"]
+            created.append({
+                "row":        i,
+                "name":       b.name,
+                "invite_url": result["invite_url"],
+            })
+        except ValueError as exc:
+            skipped.append({"row": i, "name": name, "reason": str(exc)})
+        except Exception as exc:
+            logger.exception("import_clients_csv: row %d error — %s", i, exc)
+            skipped.append({"row": i, "name": name, "reason": "Server error. Try again."})
+
+    return _ok({
+        "created_count": len(created),
+        "skipped_count": len(skipped),
+        "created":       created,
+        "skipped":       skipped,
+    }, 201 if created else 200)
