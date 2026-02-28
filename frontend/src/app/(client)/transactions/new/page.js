@@ -14,6 +14,7 @@ import { validationApi } from "@/lib/api/validation";
 import { evidenceApi } from "@/lib/api/evidence";
 import { getApiError } from "@/lib/api/client";
 import { formatINR } from "@/lib/utils";
+import { enqueueTransaction } from "@/lib/offlineQueue";
 import useAuthStore from "@/store/authStore";
 
 // ── Constants ──────────────────────────────────────────────────────────
@@ -779,9 +780,30 @@ function ChatFlow({ initialType }) {
 
   const submitTransaction = async () => {
     if (isOffline) {
-      toast.error("You are offline. Please reconnect and try again.");
-      setStep(STEPS.CONFIRM);
+      // Save to offline queue — syncs automatically when back online
+      const payload = {
+        type:             txType,
+        amount:           parseFloat(amount),
+        category:         category?.value || null,
+        transaction_date: date,
+        description:      notes || null,
+      };
+      // Convert photo to data URL for queued storage
+      let fileDataUrl = null;
+      if (photoFile) {
+        try {
+          fileDataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(photoFile);
+          });
+        } catch { /* photo won't be attached on retry, that's OK */ }
+      }
+      enqueueTransaction(payload, fileDataUrl);
       setShowTyping(false);
+      setStep(STEPS.SUCCESS);
+      await botSay(`📶 You're offline — entry saved locally. It will sync automatically when you reconnect.`);
       return;
     }
 

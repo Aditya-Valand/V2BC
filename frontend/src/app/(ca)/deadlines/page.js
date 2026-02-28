@@ -5,7 +5,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   CalendarClock, CheckCircle2, Send, RefreshCw, AlertCircle,
-  Clock, Calendar, ChevronRight, Users, Zap,
+  Clock, Calendar, ChevronRight, Zap, CheckSquare, Square, X,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { isAfter, parseISO, differenceInDays } from "date-fns";
@@ -174,6 +175,87 @@ function CompleteModal({ deadline, onClose, onDone }) {
   );
 }
 
+// ── Bulk Complete Modal ───────────────────────────────────────────────
+
+function BulkCompleteModal({ selectedIds, allDeadlines, onClose, onDone }) {
+  const [notes,   setNotes]   = useState("");
+  const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState({ done: 0, total: selectedIds.length });
+
+  const selected = allDeadlines.filter((d) => selectedIds.has(d.id));
+
+  const handleBulkComplete = async () => {
+    setLoading(true);
+    let done = 0;
+    for (const d of selected) {
+      try {
+        await deadlinesApi.complete(d.id, notes.trim() || null);
+        done++;
+        setProgress({ done, total: selected.length });
+      } catch { /* skip failed ones — they stay pending */ }
+    }
+    toast.success(`${done} of ${selected.length} deadlines marked as filed.`);
+    onDone();
+    setLoading(false);
+  };
+
+  return (
+    <ModalShell
+      onClose={onClose}
+      title={`Mark ${selectedIds.size} Deadline${selectedIds.size > 1 ? "s" : ""} as Filed`}
+    >
+      <div className="space-y-4">
+        {/* Selected list preview */}
+        <div className="bg-slate-50 rounded-xl max-h-40 overflow-y-auto divide-y divide-slate-200">
+          {selected.map((d) => (
+            <div key={d.id} className="px-3 py-2 flex items-center gap-2">
+              <CheckCircle2 size={13} className="text-green-500 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-slate-700 truncate">
+                  {DEADLINE_TYPES[d.deadline_type] || d.deadline_type}
+                </p>
+                {d.client_name && (
+                  <p className="text-[11px] text-slate-400 truncate">{d.client_name}</p>
+                )}
+              </div>
+              <span className="text-[11px] text-slate-400 shrink-0">{formatDate(d.due_date)}</span>
+            </div>
+          ))}
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+            Notes <span className="text-slate-400 font-normal normal-case">(optional — applied to all)</span>
+          </label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="e.g. Filed via GST portal on 28-Feb"
+            rows={2}
+            className="input-base resize-none"
+          />
+        </div>
+
+        {loading && (
+          <div className="flex items-center gap-2 text-sm text-blue-700">
+            <Loader2 size={14} className="animate-spin" />
+            Filing {progress.done} / {progress.total}…
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button onClick={onClose} disabled={loading} className="btn-outline flex-1">
+            Cancel
+          </button>
+          <button onClick={handleBulkComplete} disabled={loading} className="btn-primary flex-1">
+            {loading ? "Filing…" : <><CheckCircle2 size={14} /> Confirm All Filed</>}
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
 function ModalShell({ title, subtitle, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -190,19 +272,32 @@ function ModalShell({ title, subtitle, onClose, children }) {
 
 // ── Deadline Row ──────────────────────────────────────────────────────
 
-function DeadlineRow({ d, onComplete, onRemind }) {
+function DeadlineRow({ d, onComplete, onRemind, selected, onToggleSelect }) {
   const urgency = urgencyLabel(d.due_date);
   const s = DEADLINE_STATUS[d.status] || DEADLINE_STATUS.pending;
   const canComplete = ["pending", "reminded", "acknowledged"].includes(d.status);
 
   return (
-    <div className="px-4 py-3.5 flex items-start gap-3">
-      {/* Urgency dot */}
-      <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
-        urgency.cls.includes("red")    ? "bg-red-500" :
-        urgency.cls.includes("orange") ? "bg-orange-400" :
-        urgency.cls.includes("yellow") ? "bg-yellow-400" : "bg-slate-300"
-      }`} />
+    <div className={`px-4 py-3.5 flex items-start gap-3 transition-colors ${selected ? "bg-blue-50" : ""}`}>
+      {/* Checkbox for bulk selection */}
+      {canComplete ? (
+        <button
+          onClick={() => onToggleSelect(d.id)}
+          className="mt-0.5 shrink-0"
+        >
+          {selected
+            ? <CheckSquare size={16} className="text-blue-700" />
+            : <Square size={16} className="text-slate-300" />
+          }
+        </button>
+      ) : (
+        /* Urgency dot for non-actionable rows */
+        <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+          urgency.cls.includes("red")    ? "bg-red-500" :
+          urgency.cls.includes("orange") ? "bg-orange-400" :
+          urgency.cls.includes("yellow") ? "bg-yellow-400" : "bg-slate-300"
+        }`} />
+      )}
 
       {/* Main info */}
       <div className="flex-1 min-w-0">
@@ -253,7 +348,7 @@ function DeadlineRow({ d, onComplete, onRemind }) {
 
 // ── Section wrapper ───────────────────────────────────────────────────
 
-function DeadlineSection({ title, icon: Icon, iconCls, items, onComplete, onRemind, defaultOpen = true }) {
+function DeadlineSection({ title, icon: Icon, iconCls, items, onComplete, onRemind, selectedIds, onToggleSelect, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
   if (!items?.length) return null;
 
@@ -261,7 +356,7 @@ function DeadlineSection({ title, icon: Icon, iconCls, items, onComplete, onRemi
     <div>
       <button
         onClick={() => setOpen((v) => !v)}
-        className={`flex items-center gap-2 mb-2 w-full text-left`}
+        className="flex items-center gap-2 mb-2 w-full text-left"
       >
         <Icon size={15} className={iconCls} />
         <span className="text-sm font-bold text-slate-700">{title}</span>
@@ -271,7 +366,14 @@ function DeadlineSection({ title, icon: Icon, iconCls, items, onComplete, onRemi
       {open && (
         <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100 overflow-hidden">
           {items.map((d) => (
-            <DeadlineRow key={d.id} d={d} onComplete={onComplete} onRemind={onRemind} />
+            <DeadlineRow
+              key={d.id}
+              d={d}
+              onComplete={onComplete}
+              onRemind={onRemind}
+              selected={selectedIds.has(d.id)}
+              onToggleSelect={onToggleSelect}
+            />
           ))}
         </div>
       )}
@@ -286,6 +388,17 @@ export default function DeadlinesPage() {
   const [days,           setDays]           = useState(30);
   const [completeTarget, setCompleteTarget] = useState(null);
   const [remindTarget,   setRemindTarget]   = useState(null);
+  const [selectedIds,    setSelectedIds]    = useState(new Set());
+  const [showBulkModal,  setShowBulkModal]  = useState(false);
+
+  const toggleSelect = (id) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
+  const clearSelection = () => setSelectedIds(new Set());
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["upcoming-deadlines", days],
@@ -350,6 +463,31 @@ export default function DeadlinesPage() {
         </div>
       )}
 
+      {/* ── Bulk selection action bar ── */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 bg-blue-700 text-white rounded-2xl px-4 py-3 shadow-lg">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold">
+              {selectedIds.size} selected
+            </p>
+            <p className="text-xs text-blue-200">Tap checkboxes to add more</p>
+          </div>
+          <button
+            onClick={clearSelection}
+            className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/20 hover:bg-white/30 transition-colors"
+          >
+            <X size={14} />
+          </button>
+          <button
+            onClick={() => setShowBulkModal(true)}
+            className="flex items-center gap-1.5 text-sm font-bold bg-white text-blue-700 px-4 py-2 rounded-xl active:scale-95 transition-all"
+          >
+            <CheckCircle2 size={14} />
+            Mark Filed
+          </button>
+        </div>
+      )}
+
       {/* Deadline sections */}
       {isLoading ? (
         <div className="space-y-3">
@@ -372,6 +510,8 @@ export default function DeadlinesPage() {
             items={overdue}
             onComplete={setCompleteTarget}
             onRemind={setRemindTarget}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
             defaultOpen
           />
           <DeadlineSection
@@ -381,6 +521,8 @@ export default function DeadlinesPage() {
             items={thisWeek}
             onComplete={setCompleteTarget}
             onRemind={setRemindTarget}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
             defaultOpen
           />
           <DeadlineSection
@@ -390,6 +532,8 @@ export default function DeadlinesPage() {
             items={nextWeek}
             onComplete={setCompleteTarget}
             onRemind={setRemindTarget}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
             defaultOpen={false}
           />
           <DeadlineSection
@@ -399,6 +543,8 @@ export default function DeadlinesPage() {
             items={later}
             onComplete={setCompleteTarget}
             onRemind={setRemindTarget}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
             defaultOpen={false}
           />
         </div>
@@ -419,6 +565,18 @@ export default function DeadlinesPage() {
         <BulkReminderModal
           deadline={remindTarget}
           onClose={() => setRemindTarget(null)}
+        />
+      )}
+      {showBulkModal && (
+        <BulkCompleteModal
+          selectedIds={selectedIds}
+          allDeadlines={[...overdue, ...thisWeek, ...nextWeek, ...later]}
+          onClose={() => setShowBulkModal(false)}
+          onDone={() => {
+            setShowBulkModal(false);
+            clearSelection();
+            qc.invalidateQueries({ queryKey: ["upcoming-deadlines"] });
+          }}
         />
       )}
     </div>

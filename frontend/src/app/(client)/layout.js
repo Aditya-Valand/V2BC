@@ -5,15 +5,16 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
-  Home, PlusCircle, Receipt, CalendarClock, LogOut, Image,
+  Home, PlusCircle, Receipt, CalendarClock, Image, UserCircle,
 } from "lucide-react";
 import useAuthStore from "@/store/authStore";
 import { authApi } from "@/lib/api/auth";
 import { getInitials } from "@/lib/utils";
+import { useOfflineQueue } from "@/lib/useOfflineQueue";
 
 const NAV = [
   { href: "/home",             label: "Home",      icon: Home          },
-  { href: "/transactions/new", label: "Add Entry", icon: PlusCircle    },
+  { href: "/transactions/new", label: "Add",       icon: PlusCircle    },
   { href: "/transactions",     label: "History",   icon: Receipt       },
   { href: "/evidence",         label: "Receipts",  icon: Image         },
   { href: "/my-deadlines",     label: "Deadlines", icon: CalendarClock },
@@ -23,6 +24,7 @@ export default function ClientLayout({ children }) {
   const router   = useRouter();
   const pathname = usePathname();
   const { user, org, logout, isClient } = useAuthStore();
+  const { count: offlineCount, draining } = useOfflineQueue();
 
   // Guard: only clients
   useEffect(() => {
@@ -43,9 +45,9 @@ export default function ClientLayout({ children }) {
   };
 
   const isActive = (href) => {
-    if (href === "/home") return pathname === "/home";
+    if (href === "/home")         return pathname === "/home";
     if (href === "/transactions") return pathname === "/transactions";
-    if (href === "/evidence") return pathname === "/evidence";
+    if (href === "/evidence")     return pathname === "/evidence";
     return pathname.startsWith(href);
   };
 
@@ -54,6 +56,7 @@ export default function ClientLayout({ children }) {
 
       {/* ── Top header ── */}
       <header className="sticky top-0 z-20 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+
         {/* Logo + business name */}
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-8 h-8 bg-blue-700 rounded-lg flex items-center justify-center shrink-0">
@@ -72,19 +75,31 @@ export default function ClientLayout({ children }) {
           </div>
         </div>
 
-        {/* Right: user avatar + logout */}
+        {/* Right: offline badge + profile avatar */}
         <div className="flex items-center gap-2">
-          <div className="text-right hidden xs:block">
-            <p className="text-xs font-semibold text-slate-700 leading-none">{user?.name}</p>
-            <p className="text-xs text-slate-400 mt-0.5">Client</p>
-          </div>
-          <button
-            onClick={handleLogout}
-            title="Sign out"
-            className="w-9 h-9 rounded-full bg-slate-100 hover:bg-red-50 flex items-center justify-center text-slate-500 hover:text-red-600 transition-colors"
+          {/* Offline sync indicator */}
+          {offlineCount > 0 && (
+            <div
+              title={draining ? "Syncing offline entries…" : `${offlineCount} entry pending sync`}
+              className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full
+                ${draining
+                  ? "bg-blue-100 text-blue-700 animate-pulse"
+                  : "bg-orange-100 text-orange-700"
+                }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-current" />
+              {draining ? "Syncing…" : `${offlineCount} offline`}
+            </div>
+          )}
+
+          {/* Profile avatar (tappable) */}
+          <Link
+            href="/profile"
+            title="My profile"
+            className="w-9 h-9 rounded-full bg-blue-700 flex items-center justify-center text-white text-xs font-bold hover:bg-blue-800 transition-colors shrink-0"
           >
-            <LogOut size={16} />
-          </button>
+            {getInitials(user?.name || "?")}
+          </Link>
         </div>
       </header>
 
@@ -112,9 +127,16 @@ export default function ClientLayout({ children }) {
                   }`}
               >
                 {isAdd ? (
-                  /* ── Add Entry FAB-style ── */
-                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-12 h-12 bg-blue-700 rounded-full shadow-lg flex items-center justify-center">
-                    <Icon size={20} color="white" />
+                  /* FAB-style Add button with offline badge */
+                  <div className="absolute -top-5 left-1/2 -translate-x-1/2">
+                    <div className="w-12 h-12 bg-blue-700 rounded-full shadow-lg flex items-center justify-center">
+                      <Icon size={20} color="white" />
+                    </div>
+                    {offlineCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                        {offlineCount > 9 ? "9+" : offlineCount}
+                      </span>
+                    )}
                   </div>
                 ) : (
                   <Icon
@@ -132,7 +154,7 @@ export default function ClientLayout({ children }) {
                   </span>
                 )}
 
-                {/* Active indicator */}
+                {/* Active dot */}
                 {!isAdd && active && (
                   <span className="absolute bottom-1 w-1 h-1 bg-blue-700 rounded-full" />
                 )}

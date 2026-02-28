@@ -13,7 +13,38 @@ import { transactionsApi } from "@/lib/api/transactions";
 import { deadlinesApi } from "@/lib/api/deadlines";
 import { authApi } from "@/lib/api/auth";
 import { formatINR, formatDate } from "@/lib/utils";
+import { usePwaInstall } from "@/lib/usePwaInstall";
 import useAuthStore from "@/store/authStore";
+
+// ── PWA install banner ────────────────────────────────────────────────
+
+function PwaInstallBanner({ onInstall, onDismiss }) {
+  return (
+    <div className="bg-gradient-to-r from-blue-700 to-blue-600 rounded-2xl p-4 flex items-center gap-3 text-white shadow-md">
+      <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L2 7l10 5 10-5-10-5z" fill="white" />
+          <path d="M2 17l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold leading-tight">Add to Home Screen</p>
+        <p className="text-[11px] opacity-80 mt-0.5">Use like an app — works offline too</p>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          onClick={onInstall}
+          className="text-xs font-bold bg-white text-blue-700 px-3 py-1.5 rounded-xl active:scale-95 transition-all"
+        >
+          Install
+        </button>
+        <button onClick={onDismiss} className="text-white/60 hover:text-white">
+          <X size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // ── Notification permission prompt ────────────────────────────────────
 
@@ -228,6 +259,14 @@ export default function ClientHomePage() {
   const month      = format(monthDate, "yyyy-MM");
   const businessId = org?.id;
 
+  // ── PWA install ──────────────────────────────────────────────────────
+  const { canInstall, install: installPwa, dismiss: dismissPwa } = usePwaInstall();
+
+  const handleInstallPwa = async () => {
+    const accepted = await installPwa();
+    if (accepted) toast.success("BharatCompliance added to your Home Screen!");
+  };
+
   // ── Notification permission prompt ──────────────────────────────────
   const [showNotifPrompt, setShowNotifPrompt] = useState(false);
 
@@ -356,6 +395,14 @@ export default function ClientHomePage() {
           </Link>
         </div>
       </div>
+
+      {/* ── PWA install banner ── */}
+      {canInstall && (
+        <PwaInstallBanner
+          onInstall={handleInstallPwa}
+          onDismiss={dismissPwa}
+        />
+      )}
 
       {/* ── Notification permission prompt ── */}
       {showNotifPrompt && (

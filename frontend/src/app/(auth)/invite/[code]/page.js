@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   Building2, User, Phone, Lock, Eye, EyeOff,
   ArrowRight, Loader2, CheckCircle2, AlertCircle,
+  Sparkles, TrendingUp, CalendarClock, Bell,
 } from "lucide-react";
 import { inviteApi } from "@/lib/api/clients";
 import { getApiError } from "@/lib/api/client";
@@ -254,6 +255,80 @@ function ClientOtpVerify({ userId, phone, onSuccess }) {
   );
 }
 
+/* ── Stage 4: Welcome / onboarding screen ────────────────────── */
+function WelcomeScreen({ user, invite, onStart }) {
+  const steps = [
+    {
+      icon:  TrendingUp,
+      color: "bg-green-100 text-green-700",
+      title: "Record daily entries",
+      desc:  "Log sales and expenses in seconds — no typing, just tap.",
+    },
+    {
+      icon:  CalendarClock,
+      color: "bg-blue-100 text-blue-700",
+      title: "Never miss a deadline",
+      desc:  "Get reminders for GST, advance tax, and FSSAI renewals.",
+    },
+    {
+      icon:  Bell,
+      color: "bg-purple-100 text-purple-700",
+      title: "Stay connected with your CA",
+      desc:  `${invite?.ca_firm_name || "Your CA"} manages compliance for you.`,
+    },
+  ];
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      {/* Confetti-style header */}
+      <div className="bg-gradient-to-br from-blue-700 to-blue-600 px-8 py-10 text-center">
+        <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <Sparkles size={32} className="text-white" />
+        </div>
+        <h1 className="text-2xl font-bold text-white mb-1">
+          You&apos;re all set, {user?.name?.split(" ")[0]}! 🎉
+        </h1>
+        <p className="text-blue-200 text-sm">
+          Welcome to <span className="font-semibold text-white">BharatCompliance</span>
+        </p>
+        {invite?.client_name && (
+          <div className="mt-3 inline-flex items-center gap-1.5 bg-white/20 rounded-full px-3 py-1.5">
+            <Building2 size={12} className="text-white" />
+            <span className="text-xs font-semibold text-white">{invite.client_name}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Steps */}
+      <div className="p-6 space-y-4">
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
+          Here&apos;s what you can do
+        </p>
+        {steps.map(({ icon: Icon, color, title, desc }) => (
+          <div key={title} className="flex items-start gap-3">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
+              <Icon size={16} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-800">{title}</p>
+              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="px-6 pb-6">
+        <button onClick={onStart} className="btn-primary w-full">
+          Start Recording <ArrowRight size={16} />
+        </button>
+        <p className="text-xs text-slate-400 text-center mt-3">
+          Log in anytime with your phone number and PIN.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /* ── Main page ────────────────────────────────────────────────── */
 export default function InvitePage() {
   const params   = useParams();
@@ -261,10 +336,11 @@ export default function InvitePage() {
   const setAuth  = useAuthStore((s) => s.setAuth);
   const code     = params.code;
 
-  const [stage, setStage]   = useState("loading"); // loading | preview | accept | otp | expired | error
-  const [invite, setInvite] = useState(null);
+  const [stage, setStage]        = useState("loading"); // loading | preview | accept | otp | welcome | expired | error
+  const [invite, setInvite]      = useState(null);
   const [pendingUserId, setUserId] = useState(null);
   const [pendingPhone, setPhone]   = useState(null);
+  const [welcomeUser, setWelcomeUser] = useState(null);
 
   useEffect(() => {
     if (!code) return;
@@ -297,8 +373,9 @@ export default function InvitePage() {
       access_token:  data.access_token,
       refresh_token: data.refresh_token,
     });
-    toast.success(`Welcome, ${data.user.name}! 🎉`);
-    router.push("/home");
+    // Show onboarding welcome screen before redirecting
+    setWelcomeUser(data.user);
+    setStage("welcome");
   };
 
   /* Loading */
@@ -357,6 +434,13 @@ export default function InvitePage() {
   if (stage === "preview") return <InvitePreview invite={invite} onAccept={() => setStage("accept")} />;
   if (stage === "accept")  return <AcceptForm invite={invite} onSuccess={handleAcceptSuccess} />;
   if (stage === "otp")     return <ClientOtpVerify userId={pendingUserId} phone={pendingPhone} onSuccess={handleOtpSuccess} />;
+  if (stage === "welcome") return (
+    <WelcomeScreen
+      user={welcomeUser}
+      invite={invite}
+      onStart={() => router.push("/home")}
+    />
+  );
 
   return null;
 }
