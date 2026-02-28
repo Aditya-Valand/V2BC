@@ -310,6 +310,52 @@ def login(*, email: str, password: str) -> Tuple[User, Organization]:
 
 
 # ------------------------------------------------------------------ #
+# Client login (phone + PIN)
+# ------------------------------------------------------------------ #
+
+def client_login(*, phone: str, pin: str) -> Tuple[User, Organization]:
+    """
+    Authenticate a client user by phone + PIN.
+
+    PIN is stored as a bcrypt-hashed password field (set during invite accept).
+    Always runs verify_password even when phone is not found to prevent
+    timing-based user enumeration.
+
+    Returns (user, org) on success.
+    Raises ValueError with a deliberately vague message on failure.
+    """
+    _VAGUE_ERROR = "Invalid phone number or PIN."
+
+    normalised = _normalise_phone(phone)
+    user: Optional[User] = User.query.filter_by(phone=normalised).first()
+
+    hash_to_check = user.password if user else _DUMMY_HASH
+    pin_ok = verify_password(pin, hash_to_check)
+
+    if not user or not pin_ok:
+        raise ValueError(_VAGUE_ERROR)
+
+    if user.role != "client":
+        raise ValueError(_VAGUE_ERROR)
+
+    if not user.is_verified:
+        raise ValueError("Your account is not yet verified. Please complete the invite process.")
+
+    user.last_login = datetime.utcnow()
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+    membership = OrgMember.query.filter_by(user_id=user.id).first()
+    org = membership.org if membership else None
+
+    logger.info("Client logged in: user_id=%d phone=%s", user.id, normalised)
+    return user, org
+
+
+# ------------------------------------------------------------------ #
 # Token generation helpers
 # ------------------------------------------------------------------ #
 
@@ -354,6 +400,54 @@ def revoke_token(jti: str, token_type: str, expires_at: datetime) -> None:
     )
     try:
         db.session.add(entry)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def update_profile(user_id: int, *, name: Optional[str] = None, phone: Optional[str] = None) -> User:
+    """
+    Update the authenticated user's name and/or phone number.
+    Raises ValueError on duplicate phone.
+    """
+    user = User.query.get(user_id)
+    if not user:
+        raise ValueError("User not found.")
+
+    if name:
+        user.name = name
+
+    if phone is not None:
+        normalised = _normalise_phone(phone)
+        existing = User.query.filter_by(phone=normalised).first()
+        if existing and existing.id != user_id:
+            raise ValueError("This phone number is already registered to another account.")
+        user.phone = normalised
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+    return user
+
+
+def change_password(user_id: int, *, current_password: str, new_password: str) -> None:
+    """
+    Verify current password then hash and store the new one.
+    Raises ValueError if current_password is wrong.
+    """
+    user = User.query.get(user_id)
+    if not user:
+        raise ValueError("User not found.")
+
+    if not verify_password(current_password, user.password):
+        raise ValueError("Current password is incorrect.")
+
+    user.password = hash_password(new_password)
+    try:
         db.session.commit()
     except Exception:
         db.session.rollback()

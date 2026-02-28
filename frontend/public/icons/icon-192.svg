@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <!-- Background -->
+  <rect width="192" height="192" rx="40" fill="#1d4ed8"/>
+  <!-- BharatCompliance layered logo centered -->
+  <g transform="translate(96,96)" fill="none">
+    <!-- Top layer (roof) -->
+    <path d="M0 -46 L-46 -20 L0 7 L46 -20 Z" fill="white"/>
+    <!-- Middle stroke -->
+    <path d="M-46 10 L0 37 L46 10" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Bottom stroke -->
+    <path d="M-46 28 L0 55 L46 28" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

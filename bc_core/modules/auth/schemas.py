@@ -153,6 +153,22 @@ class ResendOTPSchema(Schema):
     user_id = fields.Int(required=True)
 
 
+class ClientLoginSchema(Schema):
+    """POST /auth/client-login — phone + PIN for client users."""
+    phone = fields.Str(required=True, validate=_validate_phone)
+    pin = fields.Str(
+        required=True,
+        validate=validate.Regexp(r"^\d{4,6}$", error="PIN must be 4–6 digits."),
+        load_only=True,
+    )
+
+    @pre_load
+    def normalise(self, data, **kwargs):
+        if isinstance(data.get("phone"), str):
+            data["phone"] = data["phone"].strip()
+        return data
+
+
 class RefreshSchema(Schema):
     """
     POST /auth/refresh
@@ -160,6 +176,41 @@ class RefreshSchema(Schema):
     by Flask-JWT-Extended.  Schema kept for completeness.
     """
     pass
+
+
+class UpdateProfileSchema(Schema):
+    """PUT /auth/me — update name and/or phone."""
+    name = fields.Str(
+        load_default=None,
+        validate=validate.Length(min=2, max=120, error="Name must be 2–120 characters."),
+        allow_none=True,
+    )
+    phone = fields.Str(
+        load_default=None,
+        validate=_validate_phone,
+        allow_none=True,
+    )
+
+    @pre_load
+    def normalise(self, data, **kwargs):
+        if isinstance(data.get("name"), str):
+            data["name"] = data["name"].strip()
+        if isinstance(data.get("phone"), str):
+            data["phone"] = data["phone"].strip()
+        return data
+
+
+class ChangePasswordSchema(Schema):
+    """PUT /auth/me/password — change password."""
+    current_password = fields.Str(required=True, load_only=True)
+    new_password = fields.Str(
+        required=True,
+        validate=[
+            validate.Length(max=128, error="Password must be at most 128 characters."),
+            _validate_password_strength,
+        ],
+        load_only=True,
+    )
 
 
 # ------------------------------------------------------------------ #

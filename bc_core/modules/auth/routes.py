@@ -32,10 +32,13 @@ from modules.auth.email_service import send_otp_email
 from modules.auth.models import OrgMember, User
 from modules.auth.schemas import (
     AuthTokenSchema,
+    ChangePasswordSchema,
+    ClientLoginSchema,
     LoginSchema,
     RegisterResponseSchema,
     RegisterSchema,
     ResendOTPSchema,
+    UpdateProfileSchema,
     UserPublicSchema,
     OrgPublicSchema,
     VerifyOTPSchema,
@@ -294,6 +297,54 @@ def login():
 
 
 # ------------------------------------------------------------------ #
+# POST /auth/client-login
+# ------------------------------------------------------------------ #
+
+@auth_bp.route("/client-login", methods=["POST"])
+@limiter.limit("10 per minute")       # per-IP brute-force guard
+def client_login():
+    """
+    Authenticate a client user with phone + PIN.
+
+    Returns access + refresh tokens on success.
+
+    Edge cases handled
+    ------------------
+    - Wrong phone OR wrong PIN           → 401 (vague, no leakage)
+    - Non-client role                    → 401
+    - Account not yet verified           → 403
+    - DB / unexpected errors             → 500
+    """
+    try:
+        data = ClientLoginSchema().load(request.get_json(silent=True) or {})
+    except ValidationError as exc:
+        return _err(exc.messages, 400)
+
+    try:
+        user, org = service.client_login(
+            phone=data["phone"],
+            pin=data["pin"],
+        )
+    except ValueError as exc:
+        msg = str(exc)
+        if "not yet verified" in msg.lower():
+            return _err(msg, 403)
+        return _err(msg, 401)
+    except Exception as exc:
+        logger.exception("client_login: unexpected error — %s", exc)
+        return _err("Login failed due to a server error.", 500)
+
+    tokens = service.create_tokens(user, org)
+
+    return _ok({
+        **tokens,
+        "token_type": "Bearer",
+        "user": UserPublicSchema().dump(user),
+        "org": OrgPublicSchema().dump(org) if org else None,
+    })
+
+
+# ------------------------------------------------------------------ #
 # POST /auth/refresh
 # ------------------------------------------------------------------ #
 
@@ -371,6 +422,80 @@ def me():
 # ------------------------------------------------------------------ #
 # POST /auth/logout
 # ------------------------------------------------------------------ #
+
+@auth_bp.route("/me", methods=["PUT"])
+@jwt_required()
+@limiter.limit("30 per hour")
+def update_me():
+    """Update name and/or phone for the current user."""
+    try:
+        data = UpdateProfileSchema().load(request.get_json(silent=True) or {})
+    except ValidationError as exc:
+        return _err(exc.messages, 400)
+
+    user_id = int(get_jwt_identity())
+    try:
+        user = service.update_profile(
+            user_id,
+            name=data.get("name"),
+            phone=data.get("phone"),
+        )
+    except ValueError as exc:
+        return _err(str(exc), 409 if "already" in str(exc) else 400)
+    except Exception as exc:
+        logger.exception("update_me: unexpected error — %s", exc)
+        return _err("Update failed due to a server error.", 500)
+
+    return _ok({"user": UserPublicSchema().dump(user), "message": "Profile updated."})
+
+
+@auth_bp.route("/me/password", methods=["PUT"])
+@jwt_required()
+@limiter.limit("10 per hour")
+def change_password():
+    """Change the current user's password."""
+    try:
+        data = ChangePasswordSchema().load(request.get_json(silent=True) or {})
+    except ValidationError as exc:
+        return _err(exc.messages, 400)
+
+    user_id = int(get_jwt_identity())
+    try:
+        service.change_password(
+            user_id,
+            current_password=data["current_password"],
+            new_password=data["new_password"],
+        )
+    except ValueError as exc:
+        return _err(str(exc), 400)
+    except Exception as exc:
+        logger.exception("change_password: unexpected error — %s", exc)
+        return _err("Password change failed due to a server error.", 500)
+
+    return _ok({"message": "Password changed successfully."})
+
+
+@auth_bp.route("/fcm-token", methods=["PUT"])
+@jwt_required()
+@limiter.limit("20 per hour")
+def register_fcm_token():
+    """Store or update the FCM device token for push notifications."""
+    data = request.get_json(silent=True) or {}
+    token = (data.get("fcm_token") or "").strip()
+    if not token:
+        return _err("fcm_token is required.", 400)
+
+    user_id = int(get_jwt_identity())
+    user = User.query.get(user_id)
+    if not user:
+        return _err("User not found.", 404)
+
+    from core.extensions import db as _db
+    user.fcm_token = token
+    _db.session.commit()
+    logger.info("FCM token registered for user_id=%d", user_id)
+    return _ok({"message": "FCM token registered."})
+
 
 @auth_bp.route("/logout", methods=["POST"])
 @jwt_required(verify_type=False)     # accept both access and refresh tokens

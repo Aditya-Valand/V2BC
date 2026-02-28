@@ -1,6 +1,7 @@
 import logging
 
 from flask import Flask
+from flask_cors import CORS
 
 from core.config import Config
 from core.extensions import db, jwt, limiter, migrate
@@ -29,6 +30,16 @@ logging.basicConfig(
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+
+    # ---------------------------------------------------------------- #
+    # CORS — allow frontend dev server and production origins
+    # ---------------------------------------------------------------- #
+    CORS(app, resources={r"/*": {"origins": [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "https://bharatcomplianceb.onrender.com",
+    ]}}, supports_credentials=True)
 
     # ---------------------------------------------------------------- #
     # Extensions
