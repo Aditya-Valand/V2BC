@@ -5,19 +5,20 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
-  Home, PlusCircle, Receipt, CalendarClock, Image, UserCircle,
+  Home, PlusCircle, Receipt, CalendarClock, Image,
 } from "lucide-react";
 import useAuthStore from "@/store/authStore";
 import { authApi } from "@/lib/api/auth";
 import { getInitials } from "@/lib/utils";
 import { useOfflineQueue } from "@/lib/useOfflineQueue";
+import { useLang } from "@/lib/i18n";
 
-const NAV = [
-  { href: "/home",             label: "Home",      icon: Home          },
-  { href: "/transactions/new", label: "Add",       icon: PlusCircle    },
-  { href: "/transactions",     label: "History",   icon: Receipt       },
-  { href: "/evidence",         label: "Receipts",  icon: Image         },
-  { href: "/my-deadlines",     label: "Deadlines", icon: CalendarClock },
+const NAV_ITEMS = [
+  { href: "/home",             key: "nav.home",      icon: Home          },
+  { href: "/transactions/new", key: "nav.add",       icon: PlusCircle    },
+  { href: "/transactions",     key: "nav.history",   icon: Receipt       },
+  { href: "/evidence",         key: "nav.receipts",  icon: Image         },
+  { href: "/my-deadlines",     key: "nav.deadlines", icon: CalendarClock },
 ];
 
 export default function ClientLayout({ children }) {
@@ -25,6 +26,7 @@ export default function ClientLayout({ children }) {
   const pathname = usePathname();
   const { user, org, logout, isClient } = useAuthStore();
   const { count: offlineCount, draining } = useOfflineQueue();
+  const { t } = useLang();
 
   // Guard: only clients
   useEffect(() => {
@@ -111,7 +113,8 @@ export default function ClientLayout({ children }) {
       {/* ── Bottom navigation ── */}
       <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-20 bg-white border-t border-slate-200 px-2 py-1 safe-area-bottom">
         <div className="flex items-center justify-around">
-          {NAV.map(({ href, label, icon: Icon }) => {
+          {NAV_ITEMS.map(({ href, key, icon: Icon }) => {
+            const label  = t(key);
             const active = isActive(href);
             const isAdd  = href === "/transactions/new";
             return (

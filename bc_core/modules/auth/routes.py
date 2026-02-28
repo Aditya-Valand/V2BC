@@ -373,9 +373,23 @@ def refresh():
     if not user or not user.is_verified:
         return _err("Account not found or not verified.", 401)
 
+    org_id = claims.get("org_id")
+
+    # Self-heal: if org_id is missing from an old token (data-integrity gap),
+    # re-look it up from DB so the new access token is valid for CA routes.
+    if not org_id and user.role in ("ca_owner", "ca_staff"):
+        membership = OrgMember.query.filter_by(user_id=user_id).first()
+        if membership:
+            org_id = membership.org_id
+        else:
+            from modules.organizations.models import Organization as _Org
+            _org = _Org.query.filter_by(owner_id=user_id).first()
+            if _org:
+                org_id = _org.id
+
     additional_claims = {
         "role": claims.get("role", user.role),
-        "org_id": claims.get("org_id"),
+        "org_id": org_id,
     }
     new_access_token = create_access_token(
         identity=str(user_id),   # PyJWT 2.9+: sub must be a string

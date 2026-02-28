@@ -302,3 +302,136 @@ def monthly_summary():
         return _err("Failed to compute summary.", 500)
 
     return _ok({"summary": summary})
+
+
+# ================================================================== #
+# GET /my/compliance-score — client's own compliance score
+# ================================================================== #
+
+@my_bp.route("/compliance-score", methods=["GET"])
+@jwt_required()
+@_require_client
+def get_compliance_score():
+    """
+    Return the compliance score and grade for the authenticated client.
+
+    Uses ComplianceProfile (computed by the rule engine).
+    Falls back to sensible defaults if the profile hasn't been computed yet.
+
+    Response
+    --------
+    score          — discipline_score 0-100
+    grade          — A/B/C/D derived from score
+    evidence_health — 0-100
+    gst_risk_level  — low | medium | high
+    business_name   — client's business name
+    ca_name         — name of the CA who manages this client
+    last_updated    — ISO datetime of last profile update (nullable)
+    """
+    business_id = _business_id()
+
+    from modules.compliance.models import ComplianceProfile
+    from modules.businesses.models import Business
+    from modules.auth.models import User
+    from modules.organizations.models import Organization
+
+    profile  = ComplianceProfile.query.filter_by(business_id=business_id).first()
+    business = Business.query.get(business_id)
+
+    # Resolve CA name via org owner
+    ca_name = None
+    if business and business.org_id:
+        org = Organization.query.get(business.org_id)
+        if org:
+            ca_user = User.query.get(org.owner_id)
+            ca_name = ca_user.name if ca_user else None
+
+    score          = profile.discipline_score if profile else 50
+    evidence_health = profile.evidence_health  if profile else 50
+    gst_risk        = profile.gst_risk_level.value if profile else "low"
+
+    if   score >= 80: grade = "A"
+    elif score >= 60: grade = "B"
+    elif score >= 40: grade = "C"
+    else:             grade = "D"
+
+    return _ok({
+        "score":           score,
+        "grade":           grade,
+        "evidence_health": evidence_health,
+        "gst_risk_level":  gst_risk,
+        "business_name":   business.name if business else "My Business",
+        "ca_name":         ca_name,
+        "last_updated":    profile.last_updated.isoformat() if profile and profile.last_updated else None,
+    })
+
+
+# ================================================================== #
+# GET /my/annual-summary — 12-month annual summary
+# ================================================================== #
+
+@my_bp.route("/annual-summary", methods=["GET"])
+@jwt_required()
+@_require_client
+def annual_summary():
+    """
+    Aggregated sales/expense/net summary for all 12 months of a year.
+
+    Query params
+    ------------
+    year  — int (default: current year, min: 2020)
+
+    Response
+    --------
+    year, months (array of 12), totals
+
+    Edge cases
+    ----------
+    - Year with no data → all zeros for every month
+    - Invalid year      → 400
+    """
+    business_id = _business_id()
+    current_year = datetime.utcnow().year
+
+    try:
+        year = int(request.args.get("year", current_year))
+        if not (2020 <= year <= current_year + 1):
+            raise ValueError
+    except (ValueError, TypeError):
+        return _err(f"Invalid year. Must be between 2020 and {current_year + 1}.", 400)
+
+    months_data = []
+    total_sales = total_expenses = total_tx = 0
+
+    for m in range(1, 13):
+        try:
+            summary = service.monthly_summary(business_id, year, m)
+            s = summary.get("total_sales", 0) or 0
+            e = summary.get("total_expenses", 0) or 0
+            c = summary.get("transaction_count", 0) or 0
+        except Exception:
+            s = e = c = 0
+
+        months_data.append({
+            "month":             m,
+            "month_label":       datetime(year, m, 1).strftime("%B"),
+            "month_short":       datetime(year, m, 1).strftime("%b"),
+            "sales":             s,
+            "expenses":          e,
+            "net":               s - e,
+            "transaction_count": c,
+        })
+        total_sales    += s
+        total_expenses += e
+        total_tx       += c
+
+    return _ok({
+        "year":   year,
+        "months": months_data,
+        "totals": {
+            "sales":             total_sales,
+            "expenses":          total_expenses,
+            "net":               total_sales - total_expenses,
+            "transaction_count": total_tx,
+        },
+    })

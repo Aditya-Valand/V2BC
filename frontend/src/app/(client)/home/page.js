@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   TrendingUp, TrendingDown, ArrowRight,
-  Plus, Receipt, Zap, Sparkles, Bell, X,
+  Plus, Receipt, Zap, Sparkles, Bell, X, Star,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, differenceInDays, parseISO } from "date-fns";
@@ -15,6 +15,7 @@ import { authApi } from "@/lib/api/auth";
 import { formatINR, formatDate } from "@/lib/utils";
 import { usePwaInstall } from "@/lib/usePwaInstall";
 import useAuthStore from "@/store/authStore";
+import { useLang } from "@/lib/i18n";
 
 // ── PWA install banner ────────────────────────────────────────────────
 
@@ -83,11 +84,11 @@ function NotificationPrompt({ onEnable, onDismiss }) {
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
-function greeting() {
+function greeting(t) {
   const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
+  if (h < 12) return t("home.greeting_morning");
+  if (h < 17) return t("home.greeting_afternoon");
+  return t("home.greeting_evening");
 }
 
 function deadlineUrgency(dueDateStr, status) {
@@ -103,7 +104,7 @@ function deadlineUrgency(dueDateStr, status) {
 
 // ── Mini bar chart (CSS only, no libs) ───────────────────────────────
 
-function ActivityChart({ daily }) {
+function ActivityChart({ daily, t }) {
   if (!daily?.length) return null;
 
   // Last 14 days, take the last 14 entries (or all if fewer)
@@ -113,7 +114,7 @@ function ActivityChart({ daily }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-4">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-bold text-slate-700">Daily Activity</p>
+        <p className="text-sm font-bold text-slate-700">{t("home.activity")}</p>
         <div className="flex items-center gap-3 text-[11px] font-medium text-slate-400">
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-green-400 inline-block" />Sales</span>
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-red-300 inline-block" />Expenses</span>
@@ -167,7 +168,7 @@ function ActivityChart({ daily }) {
 
 // ── Expense category breakdown ────────────────────────────────────────
 
-function ExpenseBreakdown({ categories }) {
+function ExpenseBreakdown({ categories, t }) {
   if (!categories || Object.keys(categories).length === 0) return null;
 
   const entries = Object.entries(categories)
@@ -179,7 +180,7 @@ function ExpenseBreakdown({ categories }) {
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-4">
-      <p className="text-sm font-bold text-slate-700 mb-3">Expenses by Category</p>
+      <p className="text-sm font-bold text-slate-700 mb-3">{t("home.expense_by_cat")}</p>
       <div className="space-y-2.5">
         {entries.map(([cat, amount], i) => {
           const pct   = Math.round((amount / total) * 100);
@@ -212,15 +213,15 @@ function ExpenseBreakdown({ categories }) {
 
 // ── Recent transactions ───────────────────────────────────────────────
 
-function RecentTransactions({ transactions }) {
+function RecentTransactions({ transactions, t }) {
   if (!transactions?.length) return null;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-        <p className="text-sm font-bold text-slate-700">Recent Entries</p>
+        <p className="text-sm font-bold text-slate-700">{t("home.recent_entries")}</p>
         <Link href="/transactions" className="text-xs font-semibold text-blue-700 flex items-center gap-1 hover:underline">
-          All <ArrowRight size={11} />
+          {t("home.all")} <ArrowRight size={11} />
         </Link>
       </div>
       <div className="divide-y divide-slate-100">
@@ -255,6 +256,7 @@ function RecentTransactions({ transactions }) {
 
 export default function ClientHomePage() {
   const { user, org } = useAuthStore();
+  const { t } = useLang();
   const monthDate  = new Date();
   const month      = format(monthDate, "yyyy-MM");
   const businessId = org?.id;
@@ -337,7 +339,7 @@ export default function ClientHomePage() {
           {format(new Date(), "EEEE, d MMMM yyyy")}
         </p>
         <h1 className="text-xl font-bold text-slate-800 mt-0.5">
-          {greeting()}, {user?.name?.split(" ")[0]} 👋
+          {greeting(t)}, {user?.name?.split(" ")[0]} 👋
         </h1>
       </div>
 
@@ -377,8 +379,8 @@ export default function ClientHomePage() {
               <TrendingUp size={14} />
             </div>
             <div>
-              <p className="text-xs font-bold">Add Sale</p>
-              <p className="text-[10px] opacity-75">Record income</p>
+              <p className="text-xs font-bold">{t("home.add_sale")}</p>
+              <p className="text-[10px] opacity-75">{t("home.record_income")}</p>
             </div>
           </Link>
           <Link
@@ -389,8 +391,8 @@ export default function ClientHomePage() {
               <TrendingDown size={14} className="text-red-600" />
             </div>
             <div>
-              <p className="text-xs font-bold">Add Expense</p>
-              <p className="text-[10px] text-slate-400">Record purchase</p>
+              <p className="text-xs font-bold">{t("home.add_expense")}</p>
+              <p className="text-[10px] text-slate-400">{t("home.record_purchase")}</p>
             </div>
           </Link>
         </div>
@@ -415,15 +417,15 @@ export default function ClientHomePage() {
       {/* ── Monthly summary hero ── */}
       <div className="bg-gradient-to-br from-blue-700 to-blue-800 rounded-2xl p-5 text-white shadow-lg">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-sm font-semibold opacity-80">{format(monthDate, "MMMM yyyy")}</p>
+          <p className="text-sm font-semibold opacity-80 capitalize">{format(monthDate, "MMMM yyyy")}</p>
           <span className="text-xs bg-white/20 px-2.5 py-1 rounded-full font-medium">
-            {s.transaction_count ?? 0} entries
+            {s.transaction_count ?? 0} {t("home.entries")}
           </span>
         </div>
 
         {/* Net income */}
         <div className="mb-4">
-          <p className="text-xs opacity-70 uppercase tracking-wide">Net Income</p>
+          <p className="text-xs opacity-70 uppercase tracking-wide">{t("home.net_income")}</p>
           {loadingSummary ? (
             <div className="h-10 bg-white/20 animate-pulse rounded-xl mt-1 w-32" />
           ) : (
@@ -436,7 +438,7 @@ export default function ClientHomePage() {
           <div className="flex-1">
             <div className="flex items-center gap-1.5 mb-0.5">
               <TrendingUp size={12} className="opacity-70" />
-              <p className="text-xs opacity-70">Sales</p>
+              <p className="text-xs opacity-70">{t("home.sales")}</p>
             </div>
             {loadingSummary
               ? <div className="h-5 bg-white/20 animate-pulse rounded w-20" />
@@ -446,7 +448,7 @@ export default function ClientHomePage() {
           <div className="flex-1">
             <div className="flex items-center gap-1.5 mb-0.5">
               <TrendingDown size={12} className="opacity-70" />
-              <p className="text-xs opacity-70">Expenses</p>
+              <p className="text-xs opacity-70">{t("home.expenses")}</p>
             </div>
             {loadingSummary
               ? <div className="h-5 bg-white/20 animate-pulse rounded w-20" />
@@ -458,7 +460,7 @@ export default function ClientHomePage() {
         {!loadingSummary && s.total_sales > 0 && (
           <div className="mt-4 pt-3 border-t border-white/20">
             <div className="flex items-center justify-between text-xs opacity-70 mb-1.5">
-              <span>Profit margin</span>
+              <span>{t("home.profit_margin")}</span>
               <span className="font-semibold">{netPct}%</span>
             </div>
             <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
@@ -471,13 +473,28 @@ export default function ClientHomePage() {
         )}
       </div>
 
+      {/* ── Compliance score quick-access banner ── */}
+      <Link
+        href="/score"
+        className="flex items-center gap-3 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl px-4 py-3.5 text-white shadow-sm active:scale-[0.98] transition-all"
+      >
+        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+          <Star size={18} className="text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold">{t("score.title")}</p>
+          <p className="text-[11px] text-white/70">{t("score.compliance")} — share on WhatsApp</p>
+        </div>
+        <ArrowRight size={16} className="text-white/60 shrink-0" />
+      </Link>
+
       {/* ── Urgent deadlines ── */}
       {urgentDeadlines.length > 0 && (
         <div className="bg-orange-50 border border-orange-200 rounded-2xl overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-orange-200">
             <div className="flex items-center gap-2">
               <Zap size={15} className="text-orange-500" />
-              <p className="text-sm font-bold text-orange-800">Action Required</p>
+              <p className="text-sm font-bold text-orange-800">{t("home.action_required")}</p>
             </div>
             <Link href="/my-deadlines" className="text-xs font-semibold text-orange-600 flex items-center gap-1 hover:underline">
               All <ArrowRight size={11} />
@@ -506,17 +523,17 @@ export default function ClientHomePage() {
 
       {/* ── Daily activity chart ── */}
       {!loadingSummary && s.daily_breakdown?.length > 0 && (
-        <ActivityChart daily={s.daily_breakdown} />
+        <ActivityChart daily={s.daily_breakdown} t={t} />
       )}
 
       {/* ── Expense breakdown ── */}
       {!loadingSummary && s.expense_by_category && (
-        <ExpenseBreakdown categories={s.expense_by_category} />
+        <ExpenseBreakdown categories={s.expense_by_category} t={t} />
       )}
 
       {/* ── Recent transactions ── */}
       {!loadingTx && (
-        <RecentTransactions transactions={txData?.transactions} />
+        <RecentTransactions transactions={txData?.transactions} t={t} />
       )}
 
       {/* ── Empty state: no entries yet ── */}
@@ -525,12 +542,10 @@ export default function ClientHomePage() {
           <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-3">
             <Plus size={24} className="text-blue-600" />
           </div>
-          <p className="text-sm font-bold text-slate-600">No entries yet</p>
-          <p className="text-xs text-slate-400 mt-1 mb-4">
-            Start recording your sales and expenses to track your finances.
-          </p>
+          <p className="text-sm font-bold text-slate-600">{t("home.no_entries")}</p>
+          <p className="text-xs text-slate-400 mt-1 mb-4">{t("home.no_entries_sub")}</p>
           <Link href="/transactions/new" className="btn-primary text-sm">
-            Add First Entry
+            {t("home.add_first")}
           </Link>
         </div>
       )}
@@ -542,7 +557,7 @@ export default function ClientHomePage() {
           className="flex items-center justify-center gap-2 text-sm font-semibold text-blue-700 py-3 hover:underline"
         >
           <Receipt size={15} />
-          View all {txData.total} entries
+          {t("home.view_all")} {txData.total} {t("home.entries")}
         </Link>
       )}
     </div>

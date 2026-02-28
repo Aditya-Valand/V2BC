@@ -25,4 +25,10 @@ export const transactionsApi = {
 
   // Client: monthly summary
   summary: (month) => apiClient.get("/my/summary", { params: { month } }),
+
+  // Client: compliance score + grade
+  complianceScore: () => apiClient.get("/my/compliance-score"),
+
+  // Client: 12-month annual summary
+  annualSummary: (year) => apiClient.get("/my/annual-summary", { params: { year } }),
 };

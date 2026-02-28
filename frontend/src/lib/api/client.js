@@ -53,6 +53,16 @@ apiClient.interceptors.response.use(
     const code = error.response?.data?.code;
     const status = error.response?.status;
 
+    // No token at all → clear any stale state and redirect to login
+    if (status === 401 && code === "TOKEN_MISSING" && !originalRequest._retry) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        window.location.href = "/login";
+      }
+      return Promise.reject(error);
+    }
+
     // Token expired → attempt refresh
     if (status === 401 && code === "TOKEN_EXPIRED" && !originalRequest._retry) {
       if (isRefreshing) {

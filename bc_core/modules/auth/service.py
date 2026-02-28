@@ -202,7 +202,18 @@ def verify_otp(*, user_id: int, otp: str) -> Tuple[User, Organization]:
 
     # Fetch org for the response
     membership = OrgMember.query.filter_by(user_id=user.id).first()
-    org = membership.org if membership else None
+    if membership:
+        org = membership.org
+    else:
+        org = Organization.query.filter_by(owner_id=user.id).first()
+        if org:
+            try:
+                membership = OrgMember(user_id=user.id, org_id=org.id, role="ca_owner")
+                db.session.add(membership)
+                db.session.commit()
+                logger.warning("verify_otp: repaired missing OrgMember for user_id=%d org_id=%d", user.id, org.id)
+            except Exception:
+                db.session.rollback()
 
     logger.info("User verified: user_id=%d", user.id)
     return user, org
@@ -303,7 +314,19 @@ def login(*, email: str, password: str) -> Tuple[User, Organization]:
         raise
 
     membership = OrgMember.query.filter_by(user_id=user.id).first()
-    org = membership.org if membership else None
+    if membership:
+        org = membership.org
+    else:
+        # OrgMember row missing — look up org directly and repair the gap
+        org = Organization.query.filter_by(owner_id=user.id).first()
+        if org:
+            try:
+                membership = OrgMember(user_id=user.id, org_id=org.id, role="ca_owner")
+                db.session.add(membership)
+                db.session.commit()
+                logger.warning("login: repaired missing OrgMember for user_id=%d org_id=%d", user.id, org.id)
+            except Exception:
+                db.session.rollback()
 
     logger.info("User logged in: user_id=%d", user.id)
     return user, org
@@ -350,6 +373,8 @@ def client_login(*, phone: str, pin: str) -> Tuple[User, Organization]:
 
     membership = OrgMember.query.filter_by(user_id=user.id).first()
     org = membership.org if membership else None
+    # Note: for client users, org comes via their business.org_id in the token
+    # (set in invite_verify_otp). The OrgMember lookup here is informational only.
 
     logger.info("Client logged in: user_id=%d phone=%s", user.id, normalised)
     return user, org

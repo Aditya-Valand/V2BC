@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import {
   User, Phone, Building2, Shield, Eye, EyeOff,
   ArrowLeft, Loader2, Lock, CheckCircle2,
+  Star, FileText, Globe, LogOut, ChevronRight,
 } from "lucide-react";
 import { authApi } from "@/lib/api/auth";
 import { getApiError } from "@/lib/api/client";
 import { getInitials } from "@/lib/utils";
 import useAuthStore from "@/store/authStore";
+import { useLang } from "@/lib/i18n";
 
 // ── Sub-components ─────────────────────────────────────────────────────
 
@@ -56,11 +59,64 @@ function PINField({ label, value, show, onToggle, onChange, error, placeholder }
   );
 }
 
+// ── Language toggle ────────────────────────────────────────────────────
+
+function LanguageToggle({ lang, setLang, t }) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-4">
+      <div className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center shrink-0">
+        <Globe size={16} className="text-slate-600" />
+      </div>
+      <div className="flex-1">
+        <p className="text-sm font-semibold text-slate-700">{t("profile.language")}</p>
+        <p className="text-xs text-slate-400 mt-0.5">App display language</p>
+      </div>
+      {/* Toggle pill */}
+      <div className="flex bg-slate-100 rounded-xl p-0.5 gap-0.5 shrink-0">
+        {["en", "hi"].map((l) => (
+          <button
+            key={l}
+            onClick={() => setLang(l)}
+            className={`px-3 py-1.5 rounded-[10px] text-xs font-bold transition-all ${
+              lang === l
+                ? "bg-blue-700 text-white shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            {l === "en" ? t("profile.english") : t("profile.hindi")}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Quick link row ─────────────────────────────────────────────────────
+
+function LinkRow({ icon: Icon, label, sub, href, iconBg = "bg-slate-100", iconColor = "text-slate-600" }) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-3 px-4 py-4 hover:bg-slate-50 active:bg-slate-100 transition-colors"
+    >
+      <div className={`w-9 h-9 ${iconBg} rounded-xl flex items-center justify-center shrink-0`}>
+        <Icon size={16} className={iconColor} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-slate-700">{label}</p>
+        {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+      </div>
+      <ChevronRight size={14} className="text-slate-300 shrink-0" />
+    </Link>
+  );
+}
+
 // ── Main page ──────────────────────────────────────────────────────────
 
 export default function ClientProfilePage() {
   const router = useRouter();
-  const { user, org } = useAuthStore();
+  const { user, org, logout } = useAuthStore();
+  const { t, lang, setLang } = useLang();
 
   const [showPinForm, setShowPinForm] = useState(false);
   const [pinDone,     setPinDone]     = useState(false);
@@ -78,7 +134,7 @@ export default function ClientProfilePage() {
 
   const validate = () => {
     const e = {};
-    if (!form.current) e.current = "Enter your current PIN";
+    if (!form.current) e.current = t("profile.current_pin") + " required";
     if (!/^\d{4,6}$/.test(form.next)) e.next = "New PIN must be 4–6 digits";
     if (form.next === form.current) e.next = "New PIN must differ from current";
     if (form.next !== form.confirm) e.confirm = "PINs do not match";
@@ -114,6 +170,19 @@ export default function ClientProfilePage() {
     setForm({ current: "", next: "", confirm: "" });
   };
 
+  const handleLogout = async () => {
+    try {
+      const at = localStorage.getItem("access_token");
+      const rt = localStorage.getItem("refresh_token");
+      if (at) await authApi.logout(at).catch(() => {});
+      if (rt) await authApi.logout(rt).catch(() => {});
+    } finally {
+      logout();
+      toast.success("Logged out.");
+      router.push("/login");
+    }
+  };
+
   return (
     <div className="p-4 space-y-4 pb-8">
 
@@ -126,7 +195,7 @@ export default function ClientProfilePage() {
           <ArrowLeft size={16} className="text-slate-600" />
         </button>
         <div>
-          <h1 className="text-xl font-bold text-slate-800">My Profile</h1>
+          <h1 className="text-xl font-bold text-slate-800">{t("profile.title")}</h1>
           <p className="text-xs text-slate-400 mt-0.5">Account & security</p>
         </div>
       </div>
@@ -161,6 +230,31 @@ export default function ClientProfilePage() {
         </div>
       </div>
 
+      {/* ── Quick links ── */}
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        <div className="px-4 py-2.5 border-b border-slate-100">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Reports</p>
+        </div>
+        <div className="divide-y divide-slate-100">
+          <LinkRow
+            icon={Star}
+            label={t("score.title")}
+            sub="View and share your compliance grade"
+            href="/score"
+            iconBg="bg-blue-50"
+            iconColor="text-blue-600"
+          />
+          <LinkRow
+            icon={FileText}
+            label={t("report.title")}
+            sub="Download year's financial summary as PDF"
+            href="/annual-report"
+            iconBg="bg-indigo-50"
+            iconColor="text-indigo-600"
+          />
+        </div>
+      </div>
+
       {/* ── Security: PIN change ── */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
         <div className="px-4 py-2.5 border-b border-slate-100">
@@ -176,7 +270,7 @@ export default function ClientProfilePage() {
               <Lock size={16} className="text-slate-600" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-slate-700">Change PIN</p>
+              <p className="text-sm font-semibold text-slate-700">{t("profile.change_pin")}</p>
               <p className="text-xs text-slate-400 mt-0.5">Update your 4–6 digit login PIN</p>
             </div>
             <Shield size={14} className="text-slate-300 shrink-0" />
@@ -194,7 +288,7 @@ export default function ClientProfilePage() {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <PINField
-                  label="Current PIN"
+                  label={t("profile.current_pin")}
                   value={form.current}
                   show={show.current}
                   onToggle={() => toggleShow("current")}
@@ -203,7 +297,7 @@ export default function ClientProfilePage() {
                   placeholder="Your existing PIN"
                 />
                 <PINField
-                  label="New PIN"
+                  label={t("profile.new_pin")}
                   value={form.next}
                   show={show.next}
                   onToggle={() => toggleShow("next")}
@@ -212,7 +306,7 @@ export default function ClientProfilePage() {
                   placeholder="4–6 digits"
                 />
                 <PINField
-                  label="Confirm New PIN"
+                  label={t("profile.confirm_pin")}
                   value={form.confirm}
                   show={show.confirm}
                   onToggle={() => toggleShow("confirm")}
@@ -222,12 +316,12 @@ export default function ClientProfilePage() {
                 />
                 <div className="flex gap-2 pt-1">
                   <button type="button" onClick={cancelPinForm} className="btn-outline flex-1">
-                    Cancel
+                    {t("common.cancel")}
                   </button>
                   <button type="submit" disabled={loading} className="btn-primary flex-1">
                     {loading
                       ? <><Loader2 size={14} className="animate-spin" /> Saving…</>
-                      : "Update PIN"
+                      : t("profile.save")
                     }
                   </button>
                 </div>
@@ -237,7 +331,26 @@ export default function ClientProfilePage() {
         )}
       </div>
 
-      {/* ── App version ── */}
+      {/* ── Preferences: language toggle ── */}
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        <div className="px-4 py-2.5 border-b border-slate-100">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Preferences</p>
+        </div>
+        <LanguageToggle lang={lang} setLang={setLang} t={t} />
+      </div>
+
+      {/* ── Logout ── */}
+      <button
+        onClick={handleLogout}
+        className="w-full flex items-center gap-3 bg-white rounded-2xl border border-red-100 px-4 py-4 hover:bg-red-50 active:bg-red-100 transition-colors text-left"
+      >
+        <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center shrink-0">
+          <LogOut size={16} className="text-red-500" />
+        </div>
+        <p className="text-sm font-semibold text-red-600">{t("profile.logout")}</p>
+      </button>
+
+      {/* ── Version ── */}
       <p className="text-xs text-center text-slate-300 pb-2">BharatCompliance v2.0</p>
     </div>
   );
