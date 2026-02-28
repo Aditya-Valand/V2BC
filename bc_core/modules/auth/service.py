@@ -371,13 +371,13 @@ def client_login(*, phone: str, pin: str) -> Tuple[User, Organization]:
         db.session.rollback()
         raise
 
-    membership = OrgMember.query.filter_by(user_id=user.id).first()
-    org = membership.org if membership else None
-    # Note: for client users, org comes via their business.org_id in the token
-    # (set in invite_verify_otp). The OrgMember lookup here is informational only.
+    # For clients, the authoritative org + business comes from the Business table
+    # (set when the CA created the invite). OrgMember is not used for clients.
+    from modules.businesses.models import Business
+    business = Business.query.filter_by(owner_user_id=user.id).first()
 
     logger.info("Client logged in: user_id=%d phone=%s", user.id, normalised)
-    return user, org
+    return user, business
 
 
 # ------------------------------------------------------------------ #

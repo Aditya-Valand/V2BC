@@ -20,6 +20,7 @@ from datetime import datetime, timezone
 from flask import Blueprint, current_app, jsonify, request
 from flask_jwt_extended import (
     create_access_token,
+    create_refresh_token,
     get_jwt,
     get_jwt_identity,
     jwt_required,
@@ -321,7 +322,7 @@ def client_login():
         return _err(exc.messages, 400)
 
     try:
-        user, org = service.client_login(
+        user, business = service.client_login(
             phone=data["phone"],
             pin=data["pin"],
         )
@@ -334,13 +335,27 @@ def client_login():
         logger.exception("client_login: unexpected error — %s", exc)
         return _err("Login failed due to a server error.", 500)
 
-    tokens = service.create_tokens(user, org)
+    # Build client token with business_id + org_id — same claims as invite_verify_otp
+    additional_claims = {
+        "role":        user.role,
+        "business_id": business.id     if business else None,
+        "org_id":      business.org_id if business else None,
+    }
+    access_token  = create_access_token(identity=str(user.id),  additional_claims=additional_claims)
+    refresh_token = create_refresh_token(identity=str(user.id), additional_claims=additional_claims)
+
+    # Resolve org for response (for authStore)
+    org = None
+    if business and business.org_id:
+        from modules.organizations.models import Organization
+        org = Organization.query.get(business.org_id)
 
     return _ok({
-        **tokens,
-        "token_type": "Bearer",
+        "access_token":  access_token,
+        "refresh_token": refresh_token,
+        "token_type":    "Bearer",
         "user": UserPublicSchema().dump(user),
-        "org": OrgPublicSchema().dump(org) if org else None,
+        "org":  OrgPublicSchema().dump(org) if org else None,
     })
 
 
